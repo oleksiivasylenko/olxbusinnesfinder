@@ -6,15 +6,16 @@ namespace OlxParser
 {
     public static class SettingsManager
     {
-
+        private static string _filePath => $"{GetAppDataFolder()}/Settings.json";
         public static Settings GetSettings()
         {
-            var fileData = File.ReadAllText($"{GetAppDataFolder()}/Settings.json");
+            if (!File.Exists(_filePath))
+                File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now } ));
+
+            var fileData = File.ReadAllText(_filePath);
             var settings = JsonConvert.DeserializeObject<Settings>(fileData);
             return settings;
         }
-
-
 
         private static string GetAppDataFolder()
         {
@@ -28,6 +29,7 @@ namespace OlxParser
 
         public static void SaveSettings(Settings settings)
         {
+            settings.LastSavedDate = DateTime.Now;
             File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(settings));
         }
     }

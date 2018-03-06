@@ -1,10 +1,8 @@
 ﻿using Gecko;
 using Gecko.Events;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -14,17 +12,17 @@ namespace OlxParser
 {
     public partial class mForm : Form
     {
-        private int _currentPage = 0;
-        private List<string> Links { get; set; }
         private string Query { get; set; }
-
+        private string Url { get; set; }
         private int LastPage { get; set; }
         public mForm()
         {
             InitializeComponent();
             Xpcom.Initialize("Firefox");
             _browser.DocumentCompleted += PageLoaded;
-            //timer1.Start();
+            var settings = SettingsManager.GetSettings();
+
+            txtSearch.Text = settings.SearchText;
         }
 
         private void PageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
@@ -55,7 +53,13 @@ namespace OlxParser
                 var url = e.Uri.AbsoluteUri.ToString();
 
                 if (settings.HandledLinks.Contains(url))
+                {
+                    settings.HandledLinks.Add(url);
+
+                    SettingsManager.SaveSettings(settings);
+                    LoadNextPage();
                     return;
+                }
 
                 var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
                 var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -85,7 +89,6 @@ namespace OlxParser
 
                 settings.HandledLinks.Add(url);
                 SettingsManager.SaveSettings(settings);
-                Thread.Sleep(2000);
                 LoadNextPage();
             }
             catch (Exception ex)
@@ -102,7 +105,12 @@ namespace OlxParser
                 var url = e.Uri.AbsoluteUri.ToString();
 
                 if (settings.HandledOrderLinks.Contains(url))
+                {
+                    settings.HandledOrderLinks.Add(url);
+                    SettingsManager.SaveSettings(settings);
+                    LoadNextOrder();
                     return;
+                }
 
                 var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
                 var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -116,7 +124,6 @@ namespace OlxParser
 
                 settings.HandledOrderLinks.Add(url);
                 SettingsManager.SaveSettings(settings);
-                Thread.Sleep(600);
                 LoadNextOrder();
             }
             catch (Exception ex)
@@ -129,18 +136,23 @@ namespace OlxParser
         {
             var links = new List<string>();
             for (int i = 1; i <= LastPage; i++)
-                links.Add($"{Query}/?page={i}");
+                links.Add($"{Url}/?page={i}");
 
-            var settigns = new Settings();
-            settigns.LastPage = LastPage;
-            settigns.Links = links;
+            var settings = SettingsManager.GetSettings();
+            settings.LastPage = LastPage;
+            settings.Links = links;
+            settings.CurrentStep = ProgressStep.ParseOrderLinks;
 
-            SettingsManager.SaveSettings(settigns);
+            SettingsManager.SaveSettings(settings);
+
+            MessageBox.Show("Ready search step!");
         }
 
         private void LoadNextPage()
         {
+            Thread.Sleep(200);
             var links = SettingsManager.GetSettings().GetNotHandledLinks();
+            lblToParse.Text = links.Count().ToString();
 
             if (links.Count() >= 1)
                 _browser.Navigate(links[0]);
@@ -150,16 +162,20 @@ namespace OlxParser
 
         private void btnGetLinks_Click(object sender, System.EventArgs e)
         {
+            _browser.DocumentCompleted -= LinkLoaded;
             _browser.DocumentCompleted -= PageLoaded;
             _browser.DocumentCompleted -= OrderLoaded;
+
             _browser.DocumentCompleted += LinkLoaded;
             LoadNextPage();
         }
 
         private void btnGetViewsCount_Click(object sender, System.EventArgs e)
         {
+            _browser.DocumentCompleted -= OrderLoaded;
             _browser.DocumentCompleted -= LinkLoaded;
             _browser.DocumentCompleted -= PageLoaded;
+
             _browser.DocumentCompleted += OrderLoaded;
             LoadNextOrder();
 
@@ -167,6 +183,7 @@ namespace OlxParser
 
         private void LoadNextOrder()
         {
+            Thread.Sleep(200);
             var links = SettingsManager.GetSettings().GetNotHandledOrderLinks();
             lblToParse.Text = links.Count().ToString();
 
@@ -178,17 +195,46 @@ namespace OlxParser
 
         private void btnSearchOlx_Click(object sender, System.EventArgs e)
         {
-            Uri uri = new Uri("https://www.olx.ua/list/q-бизиборд");
-            Query = uri.AbsoluteUri;
-            _browser.Navigate(Query);
+            if (string.IsNullOrEmpty(txtSearch.Text))
+                MessageBox.Show("Please exter search text!");
+            else
+            {
+                txtSearch.Text = txtSearch.Text.Replace(" ", "-");
+                Uri uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
+                Url = uri.AbsoluteUri;
+                Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
+
+                var settings = SettingsManager.GetSettings();
+                settings.SearchText = txtSearch.Text;
+                settings.LastSavedDate = DateTime.Now;
+                SettingsManager.SaveSettings(settings);
+                _browser.Navigate(uri.AbsoluteUri);
+            }
         }
 
-        private void timer1_Tick(object sender, System.EventArgs e)
+        private void tmrRestarter_Tick(object sender, System.EventArgs e)
         {
+            var settings = SettingsManager.GetSettings();
 
+            if (settings.LastSavedDate < DateTime.Now.AddSeconds(-30))
+            {
+                if (settings.CurrentStep == ProgressStep.GetOrderLinks)
+                {
+                    SettingsManager.SaveSettings(settings);
+                    btnGetViewsCount.PerformClick();
+                }
+                else if (settings.CurrentStep == ProgressStep.ParseOrderLinks)
+                {
+                    SettingsManager.SaveSettings(settings);
+                    btnGetLinks.PerformClick();
+                }
+                else {
+
+                }
+            }
         }
 
-        private void timer2_Tick(object sender, System.EventArgs e)
+        private void tmrPageLoaded_Tick(object sender, System.EventArgs e)
         {
 
         }

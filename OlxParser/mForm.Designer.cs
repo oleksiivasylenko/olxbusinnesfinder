@@ -31,8 +31,8 @@
             this.components = new System.ComponentModel.Container();
             this._browser = new Gecko.GeckoWebBrowser();
             this.btnGetLinks = new System.Windows.Forms.Button();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.tmrRestarter = new System.Windows.Forms.Timer(this.components);
+            this.tmrPageLoaded = new System.Windows.Forms.Timer(this.components);
             this.btnGetViewsCount = new System.Windows.Forms.Button();
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.btnSearchOlx = new System.Windows.Forms.Button();
@@ -61,16 +61,17 @@
             this.btnGetLinks.UseVisualStyleBackColor = true;
             this.btnGetLinks.Click += new System.EventHandler(this.btnGetLinks_Click);
             // 
-            // timer1
+            // tmrRestarter
             // 
-            this.timer1.Interval = 3000;
-            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            this.tmrRestarter.Enabled = true;
+            this.tmrRestarter.Interval = 3000;
+            this.tmrRestarter.Tick += new System.EventHandler(this.tmrRestarter_Tick);
             // 
-            // timer2
+            // tmrPageLoaded
             // 
-            this.timer2.Enabled = true;
-            this.timer2.Interval = 10000;
-            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
+            this.tmrPageLoaded.Enabled = true;
+            this.tmrPageLoaded.Interval = 10000;
+            this.tmrPageLoaded.Tick += new System.EventHandler(this.tmrPageLoaded_Tick);
             // 
             // btnGetViewsCount
             // 
@@ -130,12 +131,12 @@
 
         private Gecko.GeckoWebBrowser _browser;
         private System.Windows.Forms.Button btnGetLinks;
-        private System.Windows.Forms.Timer timer1;
-        private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.Timer tmrRestarter;
         private System.Windows.Forms.Button btnGetViewsCount;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Button btnSearchOlx;
         private System.Windows.Forms.Label lblToParse;
+        private System.Windows.Forms.Timer tmrPageLoaded;
     }
 }
 
