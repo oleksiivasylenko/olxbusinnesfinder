@@ -2,8 +2,8 @@
 {
     public enum ProgressStep
     {
-        Search,
-        GetOrderLinks,
-        ParseOrderLinks
+        One_Search,
+        Two_GetOrderLinks,
+        Three_ParseOrderLinks
     }
 }

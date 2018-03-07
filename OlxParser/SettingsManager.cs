@@ -32,5 +32,10 @@ namespace OlxParser
             settings.LastSavedDate = DateTime.Now;
             File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(settings));
         }
+
+        public static void ClearSettings()
+        {
+            File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now }));
+        }
     }
 }
