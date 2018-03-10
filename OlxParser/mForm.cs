@@ -89,13 +89,15 @@ namespace OlxParser
             if (!url.Contains("/q-"))
                 return;
 
+            if (!settings.HandledLinks.Contains(RequestedUrl))
+                settings.HandledLinks.Add(RequestedUrl);
+
+            SettingsManager.SaveSettings(settings);
+
             if (settings.HandledLinks.Contains(url))
             {
                 if (!settings.Links.Contains(url))
                     settings.Links.Add(url);
-
-                if (!settings.HandledLinks.Contains(RequestedUrl))
-                    settings.HandledLinks.Add(RequestedUrl);
 
                 SettingsManager.SaveSettings(settings);
 
@@ -125,7 +127,7 @@ namespace OlxParser
                 }
             }
 
-                
+
             if (!url.Contains("?page="))
                 url = $"{url}?page=1";
 
@@ -139,10 +141,10 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             var url = e.Uri.AbsoluteUri.ToString();
 
-            if (url.Contains("googleads"))
-                return;
+            //if (url.Contains("googleads") || url.Contains("about:blank"))
+            //    return;
 
-            if (settings.CurrentStep == ProgressStep.Two_GetOrderLinks)
+            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
             {
                 txtUrl.Text = url;
                 AddListItem($"Silent Order loaded - {url}");
@@ -151,15 +153,18 @@ namespace OlxParser
                 AddListItem($"Order loaded - {url}");
             }
 
+            if (!settings.HandledOrderLinks.Contains(RequestedOrderUrl))
+                settings.HandledOrderLinks.Add(RequestedOrderUrl);
+
+            SettingsManager.SaveSettings(settings);
+
             if (settings.HandledOrderLinks.Contains(url))
             {
                 if (!settings.OrderLinks.Contains(url))
                     settings.OrderLinks.Add(url);
-
-                if (!settings.HandledOrderLinks.Contains(RequestedOrderUrl))
-
                 SettingsManager.SaveSettings(settings);
-                if (settings.CurrentStep == ProgressStep.Two_GetOrderLinks)
+
+                if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
                     SilentParse();
                 else
                     LoadNextOrder();
@@ -179,7 +184,7 @@ namespace OlxParser
             settings.HandledOrderLinks.Add(url);
             SettingsManager.SaveSettings(settings);
 
-            if (settings.CurrentStep == ProgressStep.Two_GetOrderLinks)
+            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
                 SilentParse();
             else
                 LoadNextOrder();
@@ -194,7 +199,7 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             settings.LastPage = LastPage;
             settings.Links = links;
-            settings.CurrentStep = ProgressStep.Two_GetOrderLinks;
+            settings.CurrentStep = ProgressStep.Two_FetchOrderLinks;
 
             SettingsManager.SaveSettings(settings);
             AddListItem($"Links saved");
@@ -232,7 +237,7 @@ namespace OlxParser
             else
             {
                 AddListItem("FetchLinksReady");
-                settings.CurrentStep = ProgressStep.Three_ParseOrderLinks;
+                settings.CurrentStep = ProgressStep.Three_FetchOrdersData;
                 SettingsManager.SaveSettings(settings);
             }
         }
@@ -317,7 +322,7 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             lblStatus.Text = "In progress";
 
-            if (settings.CurrentStep == ProgressStep.Two_GetOrderLinks && !UseSilent)
+            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks && !UseSilent)
             {
                 _silentBrowser.DocumentCompleted -= OrderLoaded;
                 _silentBrowser.DocumentCompleted += OrderLoaded;
@@ -329,7 +334,7 @@ namespace OlxParser
             {
                 AddListItem($"{secondsToRestart} seconds ellapsed! restart!");
                 ClearCookies();
-                if (settings.CurrentStep == ProgressStep.Three_ParseOrderLinks)
+                if (settings.CurrentStep == ProgressStep.Three_FetchOrdersData)
                 {
                     AddListItem($"restarting orders");
                     SettingsManager.SaveSettings(settings);
@@ -337,7 +342,7 @@ namespace OlxParser
                     UseSilent = false;
                     btnGetViewsCount.PerformClick();
                 }
-                else if (settings.CurrentStep == ProgressStep.Two_GetOrderLinks)
+                else if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
                 {
                     AddListItem($"restarting parse link");
                     SettingsManager.SaveSettings(settings);

@@ -59,8 +59,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Activity.cs" />
-    <Compile Include="GVars.cs" />
+    <Compile Include="Db\Models\Category.cs" />
+    <Compile Include="Db\Models\PagingUrl.cs" />
+    <Compile Include="Db\Models\Product.cs" />
+    <Compile Include="Db\Models\SearchRequest.cs" />
+    <Compile Include="Infrastructure\GVars.cs" />
+    <Compile Include="Managers\PagingUrlManager.cs" />
+    <Compile Include="Managers\ProductManager.cs" />
     <Compile Include="mForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -68,8 +73,9 @@
       <DependentUpon>mForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
-    <Compile Include="ProgressStep.cs" />
+    <Compile Include="Infrastructure\ProgressStep.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Managers\SearchRequestManager.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="SettingsManager.cs" />
     <EmbeddedResource Include="mForm.resx">
