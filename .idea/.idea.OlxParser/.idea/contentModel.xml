@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\_work\solutions\OlxParser" t="IncludeFlat">
+      <e p="BusinessFinder" t="IncludeRecursive">
+        <e p="appsettings.Development.json" t="Include" />
+        <e p="appsettings.json" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="BusinessFinder.csproj" t="IncludeRecursive" />
+        <e p="Controllers" t="Include">
+          <e p="ValuesController.cs" t="Include" />
+        </e>
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp2.0" t="Include">
+              <e p="BusinessFinder.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Program.cs" t="Include" />
+        <e p="Properties" t="Include">
+          <e p="launchSettings.json" t="Include" />
+        </e>
+        <e p="Startup.cs" t="Include" />
+        <e p="wwwroot" t="Include" />
+      </e>
+      <e p="OlxParser" t="IncludeRecursive">
+        <e p="App.config" t="Include" />
+        <e p="App_Data" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Db" t="Include">
+          <e p="Models" t="Include">
+            <e p="Category.cs" t="Include" />
+            <e p="PagingUrl.cs" t="Include" />
+            <e p="Product.cs" t="Include" />
+            <e p="SearchRequest.cs" t="Include" />
+          </e>
+        </e>
+        <e p="Infrastructure" t="Include">
+          <e p="GVars.cs" t="Include" />
+          <e p="ProgressStep.cs" t="Include" />
+        </e>
+        <e p="Managers" t="Include">
+          <e p="PagingUrlManager.cs" t="Include" />
+          <e p="ProductManager.cs" t="Include" />
+          <e p="SearchRequestManager.cs" t="Include" />
+        </e>
+        <e p="mForm.cs" t="Include" />
+        <e p="mForm.Designer.cs" t="Include" />
+        <e p="mForm.resx" t="Include" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="OlxParser.csproj" t="IncludeRecursive" />
+        <e p="packages.config" t="Include" />
+        <e p="Program.cs" t="Include" />
+        <e p="Properties" t="Include">
+          <e p="AssemblyInfo.cs" t="Include" />
+          <e p="Resources.Designer.cs" t="Include" />
+          <e p="Resources.resx" t="Include" />
+          <e p="Settings.Designer.cs" t="Include" />
+          <e p="Settings.settings" t="Include" />
+        </e>
+        <e p="Settings.cs" t="Include" />
+        <e p="SettingsManager.cs" t="Include" />
+      </e>
+      <e p="OlxParser.sln" t="IncludeFlat" />
+      <e p="packages" t="ExcludeRecursive" />
+    </e>
+    <e p="C:\Users\ovasylenko\.Rider2017.3\system\resharper-host\local\Transient\ReSharperHost\v11\SolutionCaches\_OlxParser.806324767.00" t="ExcludeRecursive" />
+  </component>
+</project>
