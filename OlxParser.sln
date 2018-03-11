@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OlxParser", "OlxParser\OlxParser.csproj", "{45633E4A-2DA0-4C29-81AE-6B8BDBED3E28}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessFinder", "BusinessFinder\BusinessFinder.csproj", "{838B875F-8F04-4684-84D9-EC8F45D666A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{45633E4A-2DA0-4C29-81AE-6B8BDBED3E28}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45633E4A-2DA0-4C29-81AE-6B8BDBED3E28}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45633E4A-2DA0-4C29-81AE-6B8BDBED3E28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{838B875F-8F04-4684-84D9-EC8F45D666A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{838B875F-8F04-4684-84D9-EC8F45D666A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{838B875F-8F04-4684-84D9-EC8F45D666A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{838B875F-8F04-4684-84D9-EC8F45D666A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
