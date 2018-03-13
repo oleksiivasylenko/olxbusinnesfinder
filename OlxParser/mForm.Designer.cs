@@ -53,10 +53,8 @@
             // 
             // _browser
             // 
-            this._browser.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
             this._browser.FrameEventsPropagateToMainWindow = false;
-            this._browser.Location = new System.Drawing.Point(12, 464);
+            this._browser.Location = new System.Drawing.Point(0, 262);
             this._browser.Name = "_browser";
             this._browser.Size = new System.Drawing.Size(398, 455);
             this._browser.TabIndex = 0;
@@ -76,7 +74,7 @@
             // 
             // txtSearch
             // 
-            this.txtSearch.Location = new System.Drawing.Point(532, 91);
+            this.txtSearch.Location = new System.Drawing.Point(566, 91);
             this.txtSearch.Name = "txtSearch";
             this.txtSearch.Size = new System.Drawing.Size(364, 35);
             this.txtSearch.TabIndex = 3;
@@ -92,11 +90,9 @@
             // 
             // txtUrl
             // 
-            this.txtUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.txtUrl.Location = new System.Drawing.Point(77, 34);
             this.txtUrl.Name = "txtUrl";
-            this.txtUrl.Size = new System.Drawing.Size(1405, 35);
+            this.txtUrl.Size = new System.Drawing.Size(1377, 35);
             this.txtUrl.TabIndex = 6;
             // 
             // lstBoxStatus
@@ -108,7 +104,7 @@
             this.lstBoxStatus.ItemHeight = 29;
             this.lstBoxStatus.Location = new System.Drawing.Point(1213, 169);
             this.lstBoxStatus.Name = "lstBoxStatus";
-            this.lstBoxStatus.Size = new System.Drawing.Size(989, 1019);
+            this.lstBoxStatus.Size = new System.Drawing.Size(725, 1019);
             this.lstBoxStatus.TabIndex = 7;
             this.lstBoxStatus.SelectedIndexChanged += new System.EventHandler(this.lstBoxStatus_SelectedIndexChanged);
             // 
@@ -132,7 +128,7 @@
             // 
             // btnClearStatuses
             // 
-            this.btnClearStatuses.Location = new System.Drawing.Point(1213, 75);
+            this.btnClearStatuses.Location = new System.Drawing.Point(1213, 91);
             this.btnClearStatuses.Name = "btnClearStatuses";
             this.btnClearStatuses.Size = new System.Drawing.Size(230, 66);
             this.btnClearStatuses.TabIndex = 10;
@@ -228,17 +224,17 @@
             // lblOrdersLoaded
             // 
             this.lblOrdersLoaded.AutoSize = true;
-            this.lblOrdersLoaded.Location = new System.Drawing.Point(17, 169);
+            this.lblOrdersLoaded.Location = new System.Drawing.Point(11, 169);
             this.lblOrdersLoaded.Name = "lblOrdersLoaded";
-            this.lblOrdersLoaded.Size = new System.Drawing.Size(83, 29);
+            this.lblOrdersLoaded.Size = new System.Drawing.Size(176, 29);
             this.lblOrdersLoaded.TabIndex = 23;
-            this.lblOrdersLoaded.Text = "orders";
+            this.lblOrdersLoaded.Text = "orders to parse";
             // 
             // mForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(14F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(2526, 1219);
+            this.ClientSize = new System.Drawing.Size(1963, 1219);
             this.Controls.Add(this.lblOrdersLoaded);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.btnClearSettings);

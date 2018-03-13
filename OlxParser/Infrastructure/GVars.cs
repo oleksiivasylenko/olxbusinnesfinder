@@ -17,9 +17,9 @@
 
         public static class LabelsText
         {
-            public static string LabelLinksLoaded (int loaded, int allCount) => $"{loaded} links loaded of {allCount}";
+            public static string LabelLinksLoaded (int loaded, int allCount) => $"{loaded} links to load. All - {allCount}";
 
-            public static string LabelOrdersLoaded(int loaded, int allCount) => $"{loaded} orders loaded of {allCount}";
+            public static string LabelOrdersLoaded(int loaded, int allCount) => $"{loaded} orders to load. All - {allCount}";
         }
 
         public static class ProgramStatuses
