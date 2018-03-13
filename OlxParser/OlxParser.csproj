@@ -59,15 +59,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Db\Models\Category.cs" />
-    <Compile Include="Db\Models\PagingUrl.cs" />
-    <Compile Include="Db\Models\Product.cs" />
-    <Compile Include="Db\Models\SearchRequest.cs" />
     <Compile Include="Infrastructure\GVars.cs" />
     <Compile Include="Infrastructure\ProgressStep.cs" />
-    <Compile Include="Managers\PagingUrlManager.cs" />
-    <Compile Include="Managers\ProductManager.cs" />
-    <Compile Include="Managers\SearchRequestManager.cs" />
     <Compile Include="mForm.cs">
       <SubType>Form</SubType>
     </Compile>

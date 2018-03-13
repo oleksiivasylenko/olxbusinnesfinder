@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OlxParser.Db.Models
+namespace BusinessFinder.Db.Models
 {
     public class Product
     {
@@ -8,7 +8,7 @@ namespace OlxParser.Db.Models
 
         public int SearchRequestId { get; set; }
 
-        public int CategoryId { get; set; }
+        public int SubCategoryId { get; set; }
 
         public string Url { get; set; }
 
@@ -19,5 +19,9 @@ namespace OlxParser.Db.Models
         public string AuthorName { get; set; }
 
         public int PhoneNumber { get; set; }
+
+        public SubCategory SubCategory { get; set; }
+
+        public SearchRequest SearchRequest { get; set; }
     }
 }

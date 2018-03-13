@@ -15,18 +15,15 @@ namespace OlxParser
         private string Query { get; set; }
         private string Url { get; set; }
         private int LastPage { get; set; }
-        private bool UseSilent { get; set; }
 
-        private string RequestedUrl { get; set; }
+        private string RequestedLinkUrl { get; set; }
         private string RequestedOrderUrl { get; set; }
-        private GeckoWebBrowser _silentBrowser { get; set; }
 
         public mForm()
         {
             InitializeComponent();
             Xpcom.Initialize("Firefox");
             _browser.DocumentCompleted += PageLoaded;
-            _silentBrowser = new GeckoWebBrowser();
 
             var settings = SettingsManager.GetSettings();
 
@@ -36,12 +33,12 @@ namespace OlxParser
         private void AddListItem(string text)
         {
             if (lstBoxStatus.Items.Count > 200)
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                     lstBoxStatus.Items.RemoveAt(i);
 
             lstBoxStatus.Items.Add(text);
 
-            int nItems = (int)(lstBoxStatus.Height / lstBoxStatus.ItemHeight);
+            var nItems = lstBoxStatus.Height / lstBoxStatus.ItemHeight;
             lstBoxStatus.TopIndex = lstBoxStatus.Items.Count - nItems;
         }
 
@@ -51,7 +48,7 @@ namespace OlxParser
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
             htmlDoc.LoadHtml(pageData);
 
-            var url = e.Uri.AbsoluteUri.ToString();
+            var url = e.Uri.AbsoluteUri;
             txtUrl.Text = url;
 
             foreach (HtmlNode link in htmlDoc.DocumentNode.SelectNodes("//a[@href]"))
@@ -71,17 +68,17 @@ namespace OlxParser
 
         private void ClearCookies()
         {
-            nsICookieManager CookieMan;
-            CookieMan = Xpcom.GetService<nsICookieManager>("@mozilla.org/cookiemanager;1");
-            CookieMan = Xpcom.QueryInterface<nsICookieManager>(CookieMan);
-            CookieMan.RemoveAll();
-            AddListItem($"Cookie cleared!");
+            nsICookieManager cookieMan;
+            cookieMan = Xpcom.GetService<nsICookieManager>("@mozilla.org/cookiemanager;1");
+            cookieMan = Xpcom.QueryInterface<nsICookieManager>(cookieMan);
+            cookieMan.RemoveAll();
+            AddListItem("Cookie cleared!");
         }
 
         private void LinkLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
             var settings = SettingsManager.GetSettings();
-            var url = e.Uri.AbsoluteUri.ToString();
+            var url = e.Uri.AbsoluteUri;
             txtUrl.Text = url;
 
             AddListItem($"Link loaded - {url}");
@@ -89,42 +86,37 @@ namespace OlxParser
             if (!url.Contains("/q-"))
                 return;
 
-            if (!settings.HandledLinks.Contains(RequestedUrl))
-                settings.HandledLinks.Add(RequestedUrl);
-
-            SettingsManager.SaveSettings(settings);
-
             if (settings.HandledLinks.Contains(url))
             {
                 if (!settings.Links.Contains(url))
                     settings.Links.Add(url);
 
-                SettingsManager.SaveSettings(settings);
-
                 LoadNextPage();
                 return;
             }
+
+            settings.HandledOrderLinks.Add(url != RequestedLinkUrl ? RequestedLinkUrl : url);
+            SettingsManager.SaveSettings(settings);
 
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
 
             htmlDoc.LoadHtml(pageData);
-            foreach (HtmlNode link in htmlDoc.DocumentNode.SelectNodes("//a[@href]"))
+            foreach (var link in htmlDoc.DocumentNode.SelectNodes("//a[@href]"))
             {
-                string hrefValue = link.GetAttributeValue("href", string.Empty);
-                if (hrefValue.Contains(GVars.Urls.OrderUrl1) && hrefValue.Contains(GVars.Urls.OrderUrl2))
-                {
-                    int index1 = hrefValue.IndexOf("#");
-                    if (index1 > 0)
-                        hrefValue = hrefValue.Substring(0, index1);
+                var hrefValue = link.GetAttributeValue("href", string.Empty);
+                if (!hrefValue.Contains(GVars.Urls.OrderUrl1) || !hrefValue.Contains(GVars.Urls.OrderUrl2)) continue;
 
-                    int index2 = hrefValue.IndexOf("?");
-                    if (index2 > 0)
-                        hrefValue = hrefValue.Substring(0, index2);
+                var index1 = hrefValue.IndexOf("#", StringComparison.Ordinal);
+                if (index1 > 0)
+                    hrefValue = hrefValue.Substring(0, index1);
 
-                    if (!settings.OrderLinks.Contains(hrefValue))
-                        settings.OrderLinks.Add(hrefValue);
-                }
+                var index2 = hrefValue.IndexOf("?", StringComparison.Ordinal);
+                if (index2 > 0)
+                    hrefValue = hrefValue.Substring(0, index2);
+
+                if (!settings.OrderLinks.Contains(hrefValue))
+                    settings.OrderLinks.Add(hrefValue);
             }
 
 
@@ -139,37 +131,23 @@ namespace OlxParser
         private void OrderLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
             var settings = SettingsManager.GetSettings();
-            var url = e.Uri.AbsoluteUri.ToString();
+            var url = e.Uri.AbsoluteUri;
 
-            //if (url.Contains("googleads") || url.Contains("about:blank"))
-            //    return;
+            if (url.Contains("googleads") || url.Contains("about:blank"))
+                return;
 
-            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
-            {
-                txtUrl.Text = url;
-                AddListItem($"Silent Order loaded - {url}");
-            }
-            else {
-                AddListItem($"Order loaded - {url}");
-            }
-
-            if (!settings.HandledOrderLinks.Contains(RequestedOrderUrl))
-                settings.HandledOrderLinks.Add(RequestedOrderUrl);
-
-            SettingsManager.SaveSettings(settings);
+            AddListItem($"Order loaded - {url}");
 
             if (settings.HandledOrderLinks.Contains(url))
             {
                 if (!settings.OrderLinks.Contains(url))
                     settings.OrderLinks.Add(url);
-                SettingsManager.SaveSettings(settings);
 
-                if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
-                    SilentParse();
-                else
-                    LoadNextOrder();
+                LoadNextOrder();
                 return;
             }
+            settings.HandledOrderLinks.Add(url != RequestedOrderUrl ? RequestedOrderUrl : url);
+            SettingsManager.SaveSettings(settings);
 
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -184,16 +162,13 @@ namespace OlxParser
             settings.HandledOrderLinks.Add(url);
             SettingsManager.SaveSettings(settings);
 
-            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
-                SilentParse();
-            else
-                LoadNextOrder();
+            LoadNextOrder();
         }
 
         private void BuildAndSaveLinks()
         {
             var links = new List<string>();
-            for (int i = 1; i <= LastPage; i++)
+            for (var i = 1; i <= LastPage; i++)
                 links.Add($"{Url}/?page={i}");
 
             var settings = SettingsManager.GetSettings();
@@ -202,23 +177,8 @@ namespace OlxParser
             settings.CurrentStep = ProgressStep.Two_FetchOrderLinks;
 
             SettingsManager.SaveSettings(settings);
-            AddListItem($"Links saved");
+            AddListItem("Links saved");
             AddListItem("Ready search step!");
-        }
-
-        private void SilentParse()
-        {
-            var settings = SettingsManager.GetSettings();
-            var links = settings.GetNotHandledOrderLinks();
-
-            if (links.Count() >= 1)
-            {
-                RequestedOrderUrl = links[0];
-                AddListItem($"Silent navigate to {links[0]}");
-                _silentBrowser.Navigate(links[0]);
-            }
-            else
-                UseSilent = false;
         }
 
         private void LoadNextPage()
@@ -228,9 +188,9 @@ namespace OlxParser
             var links = settings.GetNotHandledLinks();
             lblToParse.Text = links.Count().ToString();
 
-            if (links.Count() >= 1)
+            if (links.Any())
             {
-                RequestedUrl = links[0];
+                RequestedLinkUrl = links[0];
                 AddListItem($"Navigate to {links[0]}");
                 _browser.Navigate(links[0]);
             }
@@ -265,12 +225,12 @@ namespace OlxParser
 
         private void LoadNextOrder()
         {
-            Thread.Sleep(200);
+            Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledOrderLinks();
-            lblToParse.Text = links.Count().ToString();
+            lblToParse.Text = links.Count.ToString();
 
-            if (links.Count() >= 1)
+            if (links.Any())
             {
                 RequestedOrderUrl = links[0];
                 AddListItem($"Navigate to {links[0]}");
@@ -304,7 +264,7 @@ namespace OlxParser
                 _browser.DocumentCompleted += PageLoaded;
 
                 txtSearch.Text = txtSearch.Text.Replace(" ", "-");
-                Uri uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
+                var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
                 Url = uri.AbsoluteUri;
                 Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
 
@@ -322,41 +282,31 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             lblStatus.Text = "In progress";
 
-            if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks && !UseSilent)
-            {
-                _silentBrowser.DocumentCompleted -= OrderLoaded;
-                _silentBrowser.DocumentCompleted += OrderLoaded;
-                UseSilent = true;
-                SilentParse();
-            }
+            if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
-            if (settings.LastSavedDate < DateTime.Now.AddSeconds(-secondsToRestart))
+            AddListItem($"{secondsToRestart} seconds ellapsed! restart!");
+            ClearCookies();
+
+            switch (settings.CurrentStep)
             {
-                AddListItem($"{secondsToRestart} seconds ellapsed! restart!");
-                ClearCookies();
-                if (settings.CurrentStep == ProgressStep.Three_FetchOrdersData)
-                {
+                case ProgressStep.Three_FetchOrdersData:
                     AddListItem($"restarting orders");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
-                    UseSilent = false;
                     btnGetViewsCount.PerformClick();
-                }
-                else if (settings.CurrentStep == ProgressStep.Two_FetchOrderLinks)
-                {
+                    break;
+                case ProgressStep.Two_FetchOrderLinks:
                     AddListItem($"restarting parse link");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
                     btnGetLinks.PerformClick();
-                }
-                else
-                {
-                    UseSilent = false;
+                    break;
+                default:
                     AddListItem($"restarting search");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
                     btnSearchOlx.PerformClick();
-                }
+                    break;
             }
         }
 
@@ -411,8 +361,6 @@ namespace OlxParser
         private void btnStart_Click(object sender, EventArgs e)
         {
             tmrRestarter.Start();
-            _silentBrowser.DocumentCompleted -= OrderLoaded;
-            _silentBrowser.DocumentCompleted += OrderLoaded;
             lblStatus.Text = "In progress";
         }
 

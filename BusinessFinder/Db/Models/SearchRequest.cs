@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OlxParser.Db.Models
+namespace BusinessFinder.Db.Models
 {
     public class SearchRequest
     {

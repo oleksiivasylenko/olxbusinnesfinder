@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OlxParser.Db.Models
+namespace BusinessFinder.Db.Models
 {
     public class PagingUrl
     {
@@ -11,5 +11,7 @@ namespace OlxParser.Db.Models
         public string Url { get; set; } 
 
         public DateTime? HandledDate { get; set; }
+
+        public SearchRequest SearchRequest { get; set; }
     }
 }
