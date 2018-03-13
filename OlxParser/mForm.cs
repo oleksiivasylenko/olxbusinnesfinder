@@ -24,10 +24,11 @@ namespace OlxParser
             InitializeComponent();
             Xpcom.Initialize("Firefox");
             _browser.DocumentCompleted += PageLoaded;
-
+            
             var settings = SettingsManager.GetSettings();
 
             txtSearch.Text = settings.SearchText;
+            btnStop.PerformClick();
         }
 
         private void AddListItem(string text)
@@ -186,7 +187,8 @@ namespace OlxParser
             Thread.Sleep(200);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledLinks();
-            lblToParse.Text = links.Count().ToString();
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(links.Count, settings.Links.Count);
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, settings.OrderLinks.Count);
 
             if (links.Any())
             {
@@ -202,14 +204,14 @@ namespace OlxParser
             }
         }
 
-        private void btnGetLinks_Click(object sender, System.EventArgs e)
+        private void GetLinks()
         {
             ClearDocumentCompletedEvents();
             _browser.DocumentCompleted += LinkLoaded;
             LoadNextPage();
         }
 
-        private void btnGetViewsCount_Click(object sender, System.EventArgs e)
+        private void GetViewsCount()
         {
             ClearDocumentCompletedEvents();
             _browser.DocumentCompleted += OrderLoaded;
@@ -228,7 +230,7 @@ namespace OlxParser
             Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledOrderLinks();
-            lblToParse.Text = links.Count.ToString();
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(links.Count, settings.OrderLinks.Count);
 
             if (links.Any())
             {
@@ -254,7 +256,7 @@ namespace OlxParser
                 lstBoxTop.Items.Add($"Viewvs: {item.Count}, Url: {item.Url}");
         }
 
-        private void btnSearchOlx_Click(object sender, System.EventArgs e)
+        private void SearchOlx()
         {
             if (string.IsNullOrEmpty(txtSearch.Text))
                 AddListItem("Please exter search text!");
@@ -280,7 +282,7 @@ namespace OlxParser
         {
             var secondsToRestart = 20;
             var settings = SettingsManager.GetSettings();
-            lblStatus.Text = "In progress";
+            lblStatus.Text = GVars.ProgramStatuses.InProgress;
 
             if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
@@ -290,22 +292,22 @@ namespace OlxParser
             switch (settings.CurrentStep)
             {
                 case ProgressStep.Three_FetchOrdersData:
-                    AddListItem($"restarting orders");
+                    AddListItem("restarting orders");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
-                    btnGetViewsCount.PerformClick();
+                    GetViewsCount();
                     break;
                 case ProgressStep.Two_FetchOrderLinks:
-                    AddListItem($"restarting parse link");
+                    AddListItem("restarting parse link");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
-                    btnGetLinks.PerformClick();
+                    GetLinks();
                     break;
                 default:
-                    AddListItem($"restarting search");
+                    AddListItem("restarting search");
                     SettingsManager.SaveSettings(settings);
                     ClearDocumentCompletedEvents();
-                    btnSearchOlx.PerformClick();
+                    SearchOlx();
                     break;
             }
         }
@@ -361,12 +363,12 @@ namespace OlxParser
         private void btnStart_Click(object sender, EventArgs e)
         {
             tmrRestarter.Start();
-            lblStatus.Text = "In progress";
+            lblStatus.Text = GVars.ProgramStatuses.InProgress;
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            lblStatus.Text = "Stoped";
+            lblStatus.Text = GVars.ProgramStatuses.Stoped;
             tmrRestarter.Stop();
         }
 
