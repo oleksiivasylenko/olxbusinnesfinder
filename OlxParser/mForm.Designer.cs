@@ -48,15 +48,23 @@
             this.btnClearSettings = new System.Windows.Forms.Button();
             this.lblStatus = new System.Windows.Forms.Label();
             this.lblOrdersLoaded = new System.Windows.Forms.Label();
+            this.ddSettings = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.btnSaveSettings = new System.Windows.Forms.Button();
+            this.txtSettingsName = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.nmrStep = new System.Windows.Forms.NumericUpDown();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.nmrTop)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nmrStep)).BeginInit();
             this.SuspendLayout();
             // 
             // _browser
             // 
             this._browser.FrameEventsPropagateToMainWindow = false;
-            this._browser.Location = new System.Drawing.Point(0, 262);
+            this._browser.Location = new System.Drawing.Point(12, 771);
             this._browser.Name = "_browser";
-            this._browser.Size = new System.Drawing.Size(398, 455);
+            this._browser.Size = new System.Drawing.Size(398, 122);
             this._browser.TabIndex = 0;
             this._browser.UseHttpActivityObserver = false;
             // 
@@ -206,9 +214,9 @@
             // 
             this.btnClearSettings.Location = new System.Drawing.Point(22, 1112);
             this.btnClearSettings.Name = "btnClearSettings";
-            this.btnClearSettings.Size = new System.Drawing.Size(206, 67);
+            this.btnClearSettings.Size = new System.Drawing.Size(296, 67);
             this.btnClearSettings.TabIndex = 21;
-            this.btnClearSettings.Text = "ClearSettings";
+            this.btnClearSettings.Text = "ClearCurentSettings";
             this.btnClearSettings.UseVisualStyleBackColor = true;
             this.btnClearSettings.Click += new System.EventHandler(this.btnClearSettings_Click);
             // 
@@ -224,17 +232,93 @@
             // lblOrdersLoaded
             // 
             this.lblOrdersLoaded.AutoSize = true;
-            this.lblOrdersLoaded.Location = new System.Drawing.Point(11, 169);
+            this.lblOrdersLoaded.Location = new System.Drawing.Point(12, 146);
             this.lblOrdersLoaded.Name = "lblOrdersLoaded";
             this.lblOrdersLoaded.Size = new System.Drawing.Size(176, 29);
             this.lblOrdersLoaded.TabIndex = 23;
             this.lblOrdersLoaded.Text = "orders to parse";
+            // 
+            // ddSettings
+            // 
+            this.ddSettings.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ddSettings.FormattingEnabled = true;
+            this.ddSettings.Location = new System.Drawing.Point(12, 237);
+            this.ddSettings.Name = "ddSettings";
+            this.ddSettings.Size = new System.Drawing.Size(388, 37);
+            this.ddSettings.TabIndex = 24;
+            this.ddSettings.DropDown += new System.EventHandler(this.ddSettings_DropDown);
+            this.ddSettings.SelectedIndexChanged += new System.EventHandler(this.ddSettings_SelectedIndexChanged);
+            this.ddSettings.DropDownClosed += new System.EventHandler(this.ddSettings_DropDownClosed);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(11, 187);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(210, 29);
+            this.label1.TabIndex = 25;
+            this.label1.Text = "SetSettingToWork";
+            // 
+            // btnSaveSettings
+            // 
+            this.btnSaveSettings.Location = new System.Drawing.Point(12, 379);
+            this.btnSaveSettings.Name = "btnSaveSettings";
+            this.btnSaveSettings.Size = new System.Drawing.Size(345, 53);
+            this.btnSaveSettings.TabIndex = 26;
+            this.btnSaveSettings.Text = "SaveToNewSettings";
+            this.btnSaveSettings.UseVisualStyleBackColor = true;
+            this.btnSaveSettings.Click += new System.EventHandler(this.btnSaveSettings_Click);
+            // 
+            // txtSettingsName
+            // 
+            this.txtSettingsName.Location = new System.Drawing.Point(12, 322);
+            this.txtSettingsName.Name = "txtSettingsName";
+            this.txtSettingsName.Size = new System.Drawing.Size(388, 35);
+            this.txtSettingsName.TabIndex = 27;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(7, 290);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(410, 29);
+            this.label2.TabIndex = 28;
+            this.label2.Text = "NewSettingName(without extension!)";
+            // 
+            // nmrStep
+            // 
+            this.nmrStep.Location = new System.Drawing.Point(169, 461);
+            this.nmrStep.Maximum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.nmrStep.Name = "nmrStep";
+            this.nmrStep.Size = new System.Drawing.Size(120, 35);
+            this.nmrStep.TabIndex = 29;
+            this.nmrStep.ValueChanged += new System.EventHandler(this.nmrStep_ValueChanged);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(17, 463);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(131, 29);
+            this.label3.TabIndex = 30;
+            this.label3.Text = "SelectStep";
             // 
             // mForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(14F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1963, 1219);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.nmrStep);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.txtSettingsName);
+            this.Controls.Add(this.btnSaveSettings);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.ddSettings);
             this.Controls.Add(this.lblOrdersLoaded);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.btnClearSettings);
@@ -255,6 +339,7 @@
             this.Name = "mForm";
             this.Text = "OlxParser";
             ((System.ComponentModel.ISupportInitialize)(this.nmrTop)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nmrStep)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -281,6 +366,13 @@
         private System.Windows.Forms.Button btnClearSettings;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.Label lblOrdersLoaded;
+        private System.Windows.Forms.ComboBox ddSettings;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnSaveSettings;
+        private System.Windows.Forms.TextBox txtSettingsName;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.NumericUpDown nmrStep;
+        private System.Windows.Forms.Label label3;
     }
 }
 

@@ -7,8 +7,6 @@ namespace BusinessFinder.Db
     {
         public DbSet<Category> Categories { get; set; }
 
-        public DbSet<SubCategory> SubCategories { get; set; }
-
         public DbSet<SearchRequest> SearchRequests { get; set; }
 
         public DbSet<Product> Products { get; set; }
@@ -28,10 +26,10 @@ namespace BusinessFinder.Db
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Category>()
-                .HasMany(p => p.SubCategories)
-                .WithOne(t => t.Category)
-                .HasForeignKey(p => p.CategoryId);
+            //modelBuilder.Entity<Category>()
+                //.HasMany(p => p.SubCategories)
+                //.WithOne(t => t.Category)
+                //.HasForeignKey(p => p.CategoryId);
         }
     }
 }

@@ -3,6 +3,7 @@ using Gecko.Events;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -15,7 +16,6 @@ namespace OlxParser
         private string Query { get; set; }
         private string Url { get; set; }
         private int LastPage { get; set; }
-
         private string RequestedLinkUrl { get; set; }
         private string RequestedOrderUrl { get; set; }
 
@@ -24,11 +24,38 @@ namespace OlxParser
             InitializeComponent();
             Xpcom.Initialize("Firefox");
             _browser.DocumentCompleted += PageLoaded;
-            
-            var settings = SettingsManager.GetSettings();
+            SetDDSettings();
 
+            var settings = SettingsManager.GetSettings();
+            nmrStep.Value = (int)settings.CurrentStep;
             txtSearch.Text = settings.SearchText;
             btnStop.PerformClick();
+        }
+
+        private List<string> GetExistedSettigns()
+        {
+            var fileNames = Directory.GetFiles(SettingsManager.GetAppDataFolder(), "*.json")
+                                    .Select(Path.GetFileName)
+                                    .ToList();
+            return fileNames;
+        }
+        private void SetDDSettings(int selectedIndex = 0)
+        {
+            ddSettings.Items.Clear();
+            var fileNames = GetExistedSettigns();
+
+            foreach (var filename in fileNames)
+                ddSettings.Items.Add(filename.Replace(".json", ""));
+
+            if (fileNames.Any())
+            {
+                ddSettings.SelectedIndex = selectedIndex;
+            }
+            else
+            {
+                ddSettings.Items.Add("Settings");
+                SettingsManager.ActiveSettingsName = "Settings";
+            }
         }
 
         private void AddListItem(string text)
@@ -184,6 +211,9 @@ namespace OlxParser
 
         private void LoadNextPage()
         {
+            if (!tmrRestarter.Enabled)
+                return;
+
             Thread.Sleep(200);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledLinks();
@@ -227,10 +257,14 @@ namespace OlxParser
 
         private void LoadNextOrder()
         {
+            if (!tmrRestarter.Enabled)
+                return;
+
             Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledOrderLinks();
             lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(links.Count, settings.OrderLinks.Count);
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.Links.Count - settings.HandledLinks.Count, settings.Links.Count);
 
             if (links.Any())
             {
@@ -286,6 +320,7 @@ namespace OlxParser
 
             if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
+            nmrStep.Value = (int)settings.CurrentStep;
             AddListItem($"{secondsToRestart} seconds ellapsed! restart!");
             ClearCookies();
 
@@ -380,6 +415,65 @@ namespace OlxParser
         private void btnClearSettings_Click(object sender, EventArgs e)
         {
             SettingsManager.ClearSettings();
+        }
+
+        private void ddSettings_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SettingsManager.ActiveSettingsName = $"{ddSettings.Items[ddSettings.SelectedIndex]}";
+            var settings = SettingsManager.GetSettings();
+            txtSearch.Text = settings.SearchText;
+            nmrStep.Value = (int)settings.CurrentStep;
+            btnClearStatuses.PerformClick();
+        }
+
+        private void btnSaveSettings_Click(object sender, EventArgs e)
+        {
+            var fileNames = GetExistedSettigns();
+
+            var settingToSave = txtSettingsName.Text;
+
+            if (string.IsNullOrEmpty(settingToSave))
+            {
+                MessageBox.Show("PleaseEnterNameOfTheSetting!");
+                return;
+            }
+
+            if (fileNames.Contains(settingToSave))
+                MessageBox.Show("Setting with such name exists! please enter another name!");
+            else
+            {
+                btnStop.PerformClick();
+                SettingsManager.ActiveSettingsName = settingToSave;
+                var settings = SettingsManager.GetSettings();
+                settings.SearchText = txtSearch.Text;
+                SettingsManager.SaveSettings(settings);
+
+                lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(0, 0);
+                lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, 0);
+                SetDDSettings(ddSettings.Items.Count);
+            }
+        }
+
+        private void ddSettings_DropDownClosed(object sender, EventArgs e)
+        {
+            btnStart.PerformClick();
+        }
+
+        private void ddSettings_DropDown(object sender, EventArgs e)
+        {
+            btnStop.PerformClick();
+        }
+
+        private void nmrStep_ValueChanged(object sender, EventArgs e)
+        {
+            tmrPageLoaded.Stop();
+            var numeric = (NumericUpDown)sender;
+            var selectedVaue = (int)numeric.Value;
+            var settings = SettingsManager.GetSettings();
+            settings.CurrentStep = (ProgressStep)selectedVaue;
+            SettingsManager.SaveSettings(settings);
+            Thread.Sleep(5000);
+            tmrPageLoaded.Start();
         }
     }
 }

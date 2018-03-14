@@ -26,7 +26,7 @@
         {
             public static string InProgress => "In progress!";
 
-            public static string Stoped => "In progress!";
+            public static string Stoped => "Stoped!";
         }
     }
 }

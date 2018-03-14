@@ -6,18 +6,19 @@ namespace OlxParser
 {
     public static class SettingsManager
     {
-        private static string _filePath => $"{GetAppDataFolder()}/Settings.json";
+        public static string ActiveSettingsName { get; set; }
+        private static string _filePath => $"{GetAppDataFolder()}/{ActiveSettingsName}.json";
         public static Settings GetSettings()
         {
             if (!File.Exists(_filePath))
-                File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now } ));
+                File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now } ));
 
             var fileData = File.ReadAllText(_filePath);
             var settings = JsonConvert.DeserializeObject<Settings>(fileData);
             return settings;
         }
 
-        private static string GetAppDataFolder()
+        public static string GetAppDataFolder()
         {
             string dirName = AppDomain.CurrentDomain.BaseDirectory; // Starting Dir
             FileInfo fileInfo = new FileInfo(dirName);
@@ -30,12 +31,12 @@ namespace OlxParser
         public static void SaveSettings(Settings settings)
         {
             settings.LastSavedDate = DateTime.Now;
-            File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(settings));
+            File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(settings));
         }
 
         public static void ClearSettings()
         {
-            File.WriteAllText($"{GetAppDataFolder()}/Settings.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now }));
+            File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now }));
         }
     }
 }
