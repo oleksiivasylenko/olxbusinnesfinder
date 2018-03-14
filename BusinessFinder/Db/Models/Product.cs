@@ -6,9 +6,9 @@ namespace BusinessFinder.Db.Models
     {
         public int Id { get; set; }
 
-        public int SearchRequestId { get; set; }
+        public int? SearchRequestId { get; set; }
 
-        public int SubCategoryId { get; set; }
+        public int ProductOwnerId { get; set; }
 
         public string Url { get; set; }
 
@@ -20,8 +20,8 @@ namespace BusinessFinder.Db.Models
 
         public int PhoneNumber { get; set; }
 
-        public SubCategory SubCategory { get; set; }
-
         public SearchRequest SearchRequest { get; set; }
+
+        public ProductOwner ProductOwner { get; set; }
     }
 }

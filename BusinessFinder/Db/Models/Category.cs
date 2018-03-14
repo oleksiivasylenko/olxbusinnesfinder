@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using BusinessFinder.Infrastructure;
 
 namespace BusinessFinder.Db.Models
 {
@@ -6,8 +6,10 @@ namespace BusinessFinder.Db.Models
     {
         public int Id { get; set; }
 
+        public int ParentId { get; set; }
+
         public string Name { get; set; }
 
-        public List<SubCategory> SubCategories { get; set; }
+        public CategoryLevel CategoryLevel { get; set; }
     }
 }
