@@ -112,7 +112,7 @@
             this.lstBoxStatus.ItemHeight = 29;
             this.lstBoxStatus.Location = new System.Drawing.Point(1213, 169);
             this.lstBoxStatus.Name = "lstBoxStatus";
-            this.lstBoxStatus.Size = new System.Drawing.Size(725, 1019);
+            this.lstBoxStatus.Size = new System.Drawing.Size(490, 526);
             this.lstBoxStatus.TabIndex = 7;
             this.lstBoxStatus.SelectedIndexChanged += new System.EventHandler(this.lstBoxStatus_SelectedIndexChanged);
             // 
@@ -248,7 +248,6 @@
             this.ddSettings.TabIndex = 24;
             this.ddSettings.DropDown += new System.EventHandler(this.ddSettings_DropDown);
             this.ddSettings.SelectedIndexChanged += new System.EventHandler(this.ddSettings_SelectedIndexChanged);
-            this.ddSettings.DropDownClosed += new System.EventHandler(this.ddSettings_DropDownClosed);
             // 
             // label1
             // 
@@ -311,7 +310,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(14F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1963, 1219);
+            this.ClientSize = new System.Drawing.Size(2144, 1219);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.nmrStep);
             this.Controls.Add(this.label2);

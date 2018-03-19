@@ -29,7 +29,9 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             nmrStep.Value = (int)settings.CurrentStep;
             txtSearch.Text = settings.SearchText;
-            btnStop.PerformClick();
+
+            StopApp();
+            SetLabelsText();
         }
 
         private List<string> GetExistedSettigns()
@@ -39,7 +41,7 @@ namespace OlxParser
                                     .ToList();
             return fileNames;
         }
-        private void SetDDSettings(int selectedIndex = 0)
+        private void SetDDSettings(string settingName = null)
         {
             ddSettings.Items.Clear();
             var fileNames = GetExistedSettigns();
@@ -49,7 +51,13 @@ namespace OlxParser
 
             if (fileNames.Any())
             {
-                ddSettings.SelectedIndex = selectedIndex;
+                if (!string.IsNullOrEmpty(settingName))
+                {
+                    var indexOfSetting = ddSettings.Items.IndexOf(settingName);
+                    ddSettings.SelectedIndex = indexOfSetting;
+                }
+                else
+                    ddSettings.SelectedIndex = 0;
             }
             else
             {
@@ -214,7 +222,7 @@ namespace OlxParser
             if (!tmrRestarter.Enabled)
                 return;
 
-            Thread.Sleep(200);
+            Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledLinks();
             lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(links.Count, settings.Links.Count);
@@ -397,14 +405,52 @@ namespace OlxParser
 
         private void btnStart_Click(object sender, EventArgs e)
         {
-            tmrRestarter.Start();
-            lblStatus.Text = GVars.ProgramStatuses.InProgress;
+            StartApp();
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            lblStatus.Text = GVars.ProgramStatuses.Stoped;
+            StopApp();
+        }
+
+        private void StartApp()
+        {
+            tmrRestarter.Start();
+            SetLabelsText();
+        }
+
+        private void SetLabelsText()
+        {
+            var settings = SettingsManager.GetSettings();
+
+            lblStatus.Text = tmrRestarter.Enabled ? GVars.ProgramStatuses.InProgress : GVars.ProgramStatuses.Stoped;
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.Links.Count - settings.HandledLinks.Count, settings.Links.Count);
+            txtSearch.Text = settings.SearchText;
+        }
+
+        private void StopApp()
+        {
             tmrRestarter.Stop();
+            lblOrdersLoaded.Text = string.Empty;
+            lblToParse.Text = string.Empty;
+            lblStatus.Text = GVars.ProgramStatuses.Stoped;
+
+            UnsubscribeBrowsers();
+        }
+
+        private void SubscribeBrowsers()
+        {
+            _browser.DocumentCompleted -= LinkLoaded;
+            _browser.DocumentCompleted -= PageLoaded;
+            _browser.DocumentCompleted -= OrderLoaded;
+        }
+
+        public void UnsubscribeBrowsers()
+        {
+            _browser.DocumentCompleted -= LinkLoaded;
+            _browser.DocumentCompleted -= PageLoaded;
+            _browser.DocumentCompleted -= OrderLoaded;
         }
 
         private void chkDescending_CheckedChanged(object sender, EventArgs e)
@@ -421,9 +467,9 @@ namespace OlxParser
         {
             SettingsManager.ActiveSettingsName = $"{ddSettings.Items[ddSettings.SelectedIndex]}";
             var settings = SettingsManager.GetSettings();
-            txtSearch.Text = settings.SearchText;
             nmrStep.Value = (int)settings.CurrentStep;
             btnClearStatuses.PerformClick();
+            SetLabelsText();
         }
 
         private void btnSaveSettings_Click(object sender, EventArgs e)
@@ -442,7 +488,7 @@ namespace OlxParser
                 MessageBox.Show("Setting with such name exists! please enter another name!");
             else
             {
-                btnStop.PerformClick();
+                StopApp();
                 SettingsManager.ActiveSettingsName = settingToSave;
                 var settings = SettingsManager.GetSettings();
                 settings.SearchText = txtSearch.Text;
@@ -450,30 +496,24 @@ namespace OlxParser
 
                 lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(0, 0);
                 lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, 0);
-                SetDDSettings(ddSettings.Items.Count);
+                SetDDSettings(settingToSave);
             }
-        }
-
-        private void ddSettings_DropDownClosed(object sender, EventArgs e)
-        {
-            btnStart.PerformClick();
         }
 
         private void ddSettings_DropDown(object sender, EventArgs e)
         {
-            btnStop.PerformClick();
+            StopApp();
         }
 
         private void nmrStep_ValueChanged(object sender, EventArgs e)
         {
-            tmrPageLoaded.Stop();
+            UnsubscribeBrowsers();
             var numeric = (NumericUpDown)sender;
             var selectedVaue = (int)numeric.Value;
             var settings = SettingsManager.GetSettings();
             settings.CurrentStep = (ProgressStep)selectedVaue;
             SettingsManager.SaveSettings(settings);
-            Thread.Sleep(5000);
-            tmrPageLoaded.Start();
+            SetLabelsText();
         }
     }
 }
