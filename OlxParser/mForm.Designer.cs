@@ -55,6 +55,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.nmrStep = new System.Windows.Forms.NumericUpDown();
             this.label3 = new System.Windows.Forms.Label();
+            this.btnOpenTop = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nmrTop)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nmrStep)).BeginInit();
             this.SuspendLayout();
@@ -78,7 +79,6 @@
             // 
             this.tmrPageLoaded.Enabled = true;
             this.tmrPageLoaded.Interval = 10000;
-            this.tmrPageLoaded.Tick += new System.EventHandler(this.tmrPageLoaded_Tick);
             // 
             // txtSearch
             // 
@@ -148,9 +148,9 @@
             // 
             this.lstBoxTop.FormattingEnabled = true;
             this.lstBoxTop.ItemHeight = 29;
-            this.lstBoxTop.Location = new System.Drawing.Point(427, 198);
+            this.lstBoxTop.Location = new System.Drawing.Point(427, 488);
             this.lstBoxTop.Name = "lstBoxTop";
-            this.lstBoxTop.Size = new System.Drawing.Size(763, 990);
+            this.lstBoxTop.Size = new System.Drawing.Size(763, 700);
             this.lstBoxTop.TabIndex = 12;
             this.lstBoxTop.SelectedIndexChanged += new System.EventHandler(this.lstBoxTop_SelectedIndexChanged);
             // 
@@ -306,11 +306,22 @@
             this.label3.TabIndex = 30;
             this.label3.Text = "SelectStep";
             // 
+            // btnOpenTop
+            // 
+            this.btnOpenTop.Location = new System.Drawing.Point(427, 220);
+            this.btnOpenTop.Name = "btnOpenTop";
+            this.btnOpenTop.Size = new System.Drawing.Size(408, 79);
+            this.btnOpenTop.TabIndex = 31;
+            this.btnOpenTop.Text = "Open Top In New Window";
+            this.btnOpenTop.UseVisualStyleBackColor = true;
+            this.btnOpenTop.Click += new System.EventHandler(this.btnOpenTop_Click);
+            // 
             // mForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(14F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(2144, 1219);
+            this.Controls.Add(this.btnOpenTop);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.nmrStep);
             this.Controls.Add(this.label2);
@@ -372,6 +383,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.NumericUpDown nmrStep;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button btnOpenTop;
     }
 }
 

@@ -3,6 +3,7 @@ using Gecko.Events;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -13,6 +14,22 @@ namespace OlxParser
 {
     public partial class mForm : Form
     {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool ShowWindow(IntPtr hWnd, ShowWindowEnum flags);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int SetForegroundWindow(IntPtr hwnd);
+
+        private enum ShowWindowEnum
+        {
+            Hide = 0,
+            ShowNormal = 1, ShowMinimized = 2, ShowMaximized = 3,
+            Maximize = 3, ShowNormalNoActivate = 4, Show = 5,
+            Minimize = 6, ShowMinNoActivate = 7, ShowNoActivate = 8,
+            Restore = 9, ShowDefault = 10, ForceMinimized = 11
+        };
+
         private string Query { get; set; }
         private string Url { get; set; }
         private int LastPage { get; set; }
@@ -286,16 +303,21 @@ namespace OlxParser
 
         private void DrawMostPopularView()
         {
+            var urls = GetTopUrlCounters();
+
+            lstBoxTop.Items.Clear();
+            foreach (var item in urls)
+                lstBoxTop.Items.Add($"Viewvs: {item.Count}, Url: {item.Url}");
+        }
+
+        private List<UrlCounter> GetTopUrlCounters()
+        {
             var settigns = SettingsManager.GetSettings();
 
             var urls = settigns.UrlWithCounts;
             if (!chkDescending.Checked)
                 urls = settigns.UrlWithCounts.OrderBy(u => u.Count).ToList();
-
-            var top = urls.Take((int)nmrTop.Value);
-            lstBoxTop.Items.Clear();
-            foreach (var item in top)
-                lstBoxTop.Items.Add($"Viewvs: {item.Count}, Url: {item.Url}");
+            return urls.Take((int)nmrTop.Value).ToList();
         }
 
         private void SearchOlx()
@@ -355,11 +377,6 @@ namespace OlxParser
             }
         }
 
-        private void tmrPageLoaded_Tick(object sender, System.EventArgs e)
-        {
-
-        }
-
         private void btnClearStatuses_Click(object sender, EventArgs e)
         {
             lstBoxStatus.Items.Clear();
@@ -390,7 +407,10 @@ namespace OlxParser
 
             var value = GetUrlFromLine(lstBoxTop.SelectedItem.ToString());
             if (!string.IsNullOrEmpty(value))
+            {
+                Process.Start("chrome.exe", value);
                 Clipboard.SetText(value);
+            }
         }
 
         private void lstBoxStatus_SelectedIndexChanged(object sender, EventArgs e)
@@ -400,7 +420,44 @@ namespace OlxParser
 
             var value = GetUrlFromLine(lstBoxStatus.SelectedItem.ToString());
             if (!string.IsNullOrEmpty(value))
+            {
+                Process.Start("chrome.exe", value);
                 Clipboard.SetText(value);
+            }
+        }
+
+        public void BringMainWindowToFront(IntPtr mainWindowHandle)
+        {
+            SetForegroundWindow(mainWindowHandle);
+        }
+
+        private void OpenTopList()
+        {
+            var urls = GetTopUrlCounters();
+
+            if (urls.Count() > 50)
+            {
+                MessageBox.Show("ToManyLinksToOpen!");
+                return;
+            }
+
+            Process process = new Process();
+            process.StartInfo.FileName = @"chrome.exe";
+
+            for (int i = 0; i < urls.Count(); i++)
+            {
+                if(i == 0)
+                    process.StartInfo.Arguments = urls[0].Url + " --new-window";
+                else
+                    process.StartInfo.Arguments = urls[i].Url;
+                process.Start();
+
+                if (i == 0)
+                {
+                    Thread.Sleep(2000);
+                    BringMainWindowToFront(process.Handle);
+                }
+            }
         }
 
         private void btnStart_Click(object sender, EventArgs e)
@@ -514,6 +571,11 @@ namespace OlxParser
             settings.CurrentStep = (ProgressStep)selectedVaue;
             SettingsManager.SaveSettings(settings);
             SetLabelsText();
+        }
+
+        private void btnOpenTop_Click(object sender, EventArgs e)
+        {
+            OpenTopList();
         }
     }
 }
