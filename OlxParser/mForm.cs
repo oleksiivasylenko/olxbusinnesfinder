@@ -14,22 +14,11 @@ namespace OlxParser
 {
     public partial class mForm : Form
     {
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        private static extern bool ShowWindow(IntPtr hWnd, ShowWindowEnum flags);
+
+        #region properties & fields 
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern int SetForegroundWindow(IntPtr hwnd);
-
-        private enum ShowWindowEnum
-        {
-            Hide = 0,
-            ShowNormal = 1, ShowMinimized = 2, ShowMaximized = 3,
-            Maximize = 3, ShowNormalNoActivate = 4, Show = 5,
-            Minimize = 6, ShowMinNoActivate = 7, ShowNoActivate = 8,
-            Restore = 9, ShowDefault = 10, ForceMinimized = 11
-        };
-
         private string Query { get; set; }
         private string Url { get; set; }
         private int LastPage { get; set; }
@@ -38,6 +27,9 @@ namespace OlxParser
         private GeckoWebBrowser _browserLinkParser { get; set; }
         private GeckoWebBrowser _browserOrderLoader { get; set; }
 
+        #endregion
+
+        #region constructors
 
         public mForm()
         {
@@ -46,7 +38,6 @@ namespace OlxParser
             _browserLinkParser = new GeckoWebBrowser();
             _browserOrderLoader = new GeckoWebBrowser();
 
-
             SubscribeBrowsers();
             SetDDSettings();
 
@@ -54,7 +45,270 @@ namespace OlxParser
             txtSearch.Text = settings.SearchText;
 
             StopApp();
-            SetLabelsText();
+            PopulateLabels();
+        }
+
+        #endregion
+
+        #region step functions 
+
+        private void LoadNextPage()
+        {
+            if (!tmrRestarter.Enabled)
+                return;
+
+            Thread.Sleep(100);
+            var settings = SettingsManager.GetSettings();
+            var links = settings.GetNotHandledLinks();
+            PopulateLabels();
+
+            if (links.Any())
+            {
+                RequestedLinkUrl = links[0];
+                AddListItem($"Navigate to {links[0]}");
+                _browserLinkParser.Navigate(links[0]);
+            }
+            else
+                AddListItem("No links to parse!");
+        }
+
+        private void LoadNextOrder()
+        {
+            if (!tmrRestarter.Enabled)
+                return;
+
+            Thread.Sleep(100);
+
+            var settings = SettingsManager.GetSettings();
+            var links = settings.GetNotHandledOrderLinks();
+            PopulateLabels();
+
+            if (links.Any())
+            {
+                RequestedOrderUrl = links[0];
+                AddListItem($"Navigate to {links[0]}");
+                _browserOrderLoader.Navigate(links[0]);
+            }
+            else
+                AddListItem("No orders to parse!");
+        }
+
+        private void SearchOlx()
+        {
+            if (string.IsNullOrEmpty(txtSearch.Text))
+                AddListItem("Please enter search text!");
+            else
+            {
+                var settings = SettingsManager.GetSettings();
+
+                if (settings.Links.Any())
+                {
+                    txtSearch.Text = txtSearch.Text.Replace(" ", "-");
+                    var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
+                    Url = uri.AbsoluteUri;
+                    Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
+
+                    settings.SearchText = txtSearch.Text;
+                    settings.LastSavedDate = DateTime.Now;
+                    SettingsManager.SaveSettings(settings);
+                    _browserSearchLinks.Navigate(uri.AbsoluteUri);
+                }
+            }
+        }
+
+        #endregion
+
+        #region UIEventHandlers
+
+        private void tmrRestarter_Tick(object sender, System.EventArgs e)
+        {
+            var secondsToRestart = 20;
+            var settings = SettingsManager.GetSettings();
+            if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
+
+            AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
+            ClearCookies();
+
+            UnsubscribeBrowsers();
+            SubscribeBrowsers();
+
+            SearchOlx();
+            LoadNextPage();
+            LoadNextOrder();
+        }
+
+        private void btnClearStatuses_Click(object sender, EventArgs e)
+        {
+            lstBoxStatus.Items.Clear();
+        }
+
+        private void btnDrawPopular_Click(object sender, EventArgs e)
+        {
+            DrawMostPopularView();
+        }
+
+        private void nmrTop_ValueChanged(object sender, EventArgs e)
+        {
+            DrawMostPopularView();
+        }
+
+        private void lstBoxTop_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lstBoxTop.SelectedIndex == -1)
+                return;
+
+            var value = GetUrlFromLine(lstBoxTop.SelectedItem.ToString());
+            if (!string.IsNullOrEmpty(value))
+            {
+                Process.Start("chrome.exe", value);
+                Clipboard.SetText(value);
+            }
+        }
+
+        private void lstBoxStatus_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lstBoxStatus.SelectedIndex == -1)
+                return;
+
+            var value = GetUrlFromLine(lstBoxStatus.SelectedItem.ToString());
+            if (!string.IsNullOrEmpty(value))
+            {
+                Process.Start("chrome.exe", value);
+                Clipboard.SetText(value);
+            }
+        }
+
+        private void btnStart_Click(object sender, EventArgs e)
+        {
+            StartApp();
+        }
+
+        private void btnStop_Click(object sender, EventArgs e)
+        {
+            StopApp();
+        }
+
+        private void btnOpenTop_Click(object sender, EventArgs e)
+        {
+            OpenTopList();
+        }
+
+        private void nmrStep_ValueChanged(object sender, EventArgs e)
+        {
+            var numeric = (NumericUpDown)sender;
+            var selectedVaue = (int)numeric.Value;
+            var settings = SettingsManager.GetSettings();
+            SettingsManager.SaveSettings(settings);
+            PopulateLabels();
+        }
+
+        private void ddSettings_DropDown(object sender, EventArgs e)
+        {
+            StopApp();
+        }
+
+        private void btnSaveSettings_Click(object sender, EventArgs e)
+        {
+            var fileNames = GetExistedSettigns();
+
+            var settingToSave = txtSettingsName.Text;
+
+            if (string.IsNullOrEmpty(settingToSave))
+            {
+                MessageBox.Show("Please enter the name of the setting!");
+                return;
+            }
+
+            if (fileNames.Contains(settingToSave))
+                MessageBox.Show("Setting with such name exists! please enter another name!");
+            else
+            {
+                StopApp();
+                SettingsManager.ActiveSettingsName = settingToSave;
+                var settings = SettingsManager.GetSettings();
+                settings.SearchText = txtSearch.Text;
+                SettingsManager.SaveSettings(settings);
+
+
+                SetDDSettings(settingToSave);
+            }
+        }
+
+        private void chkDescending_CheckedChanged(object sender, EventArgs e)
+        {
+            DrawMostPopularView();
+        }
+
+        private void btnClearSettings_Click(object sender, EventArgs e)
+        {
+            SettingsManager.ClearSettings();
+        }
+
+        private void ddSettings_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SettingsManager.ActiveSettingsName = $"{ddSettings.Items[ddSettings.SelectedIndex]}";
+            var settings = SettingsManager.GetSettings();
+            btnClearStatuses.PerformClick();
+            PopulateLabels();
+        }
+
+        #endregion
+
+        #region helper functions
+
+        private void ClearCookies()
+        {
+            nsICookieManager cookieMan;
+            cookieMan = Xpcom.GetService<nsICookieManager>("@mozilla.org/cookiemanager;1");
+            cookieMan = Xpcom.QueryInterface<nsICookieManager>(cookieMan);
+            cookieMan.RemoveAll();
+            AddListItem("Cookie cleared!");
+        }
+
+        private void StartApp()
+        {
+            tmrRestarter.Start();
+            PopulateLabels();
+            SubscribeBrowsers();
+        }
+
+        private void StopApp()
+        {
+            tmrRestarter.Stop();
+            UnsubscribeBrowsers();
+        }
+
+        private void ClearLabels()
+        {
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(0, 0);
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, 0);
+            lblStatus.Text = GVars.ProgramStatuses.Stoped;
+            txtSearch.Text = string.Empty;
+            txtSettingsName.Text = string.Empty;
+        }
+
+        private void PopulateLabels()
+        {
+            var settings = SettingsManager.GetSettings();
+            txtSearch.Text = settings.SearchText;
+
+            lblStatus.Text = tmrRestarter.Enabled ? GVars.ProgramStatuses.InProgress : GVars.ProgramStatuses.Stoped;
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.HandledLinks.Count, settings.Links.Count);
+        }
+
+        private void UnsubscribeBrowsers()
+        {
+            _browserSearchLinks.DocumentCompleted -= SearchPageLoaded;
+            _browserLinkParser.DocumentCompleted -= LinkLoaded;
+            _browserOrderLoader.DocumentCompleted -= OrderLoaded;
+        }
+
+        private void SubscribeBrowsers()
+        {
+            _browserSearchLinks.DocumentCompleted += SearchPageLoaded;
+            _browserLinkParser.DocumentCompleted += LinkLoaded;
+            _browserOrderLoader.DocumentCompleted += OrderLoaded;
         }
 
         private List<string> GetExistedSettigns()
@@ -64,6 +318,7 @@ namespace OlxParser
                                     .ToList();
             return fileNames;
         }
+
         private void SetDDSettings(string settingName = null)
         {
             ddSettings.Items.Clear();
@@ -101,6 +356,86 @@ namespace OlxParser
             lstBoxStatus.TopIndex = lstBoxStatus.Items.Count - nItems;
         }
 
+        public void BringMainWindowToFront(IntPtr mainWindowHandle)
+        {
+            SetForegroundWindow(mainWindowHandle);
+        }
+
+        private void DrawMostPopularView()
+        {
+            var urls = GetTopUrlCounters();
+
+            lstBoxTop.Items.Clear();
+            foreach (var item in urls)
+                lstBoxTop.Items.Add($"Views: {item.Count}, Url: {item.Url}");
+        }
+
+        private List<UrlCounter> GetTopUrlCounters()
+        {
+            var settigns = SettingsManager.GetSettings();
+
+            var urls = settigns.UrlWithCounts;
+            if (!chkDescending.Checked)
+                urls = settigns.UrlWithCounts.OrderBy(u => u.Count).ToList();
+            return urls.Take((int)nmrTop.Value).ToList();
+        }
+
+        private void BuildAndSaveLinks()
+        {
+            var links = new List<string>();
+            for (var i = 1; i <= LastPage; i++)
+                links.Add($"{Url}/?page={i}");
+
+            var settings = SettingsManager.GetSettings();
+            settings.LastPage = LastPage;
+            settings.Links = links;
+
+            SettingsManager.SaveSettings(settings);
+            AddListItem("Links saved");
+            AddListItem("Ready search step!");
+        }
+
+        private string GetUrlFromLine(string line)
+        {
+            var url = string.Empty;
+            if (Regex.IsMatch(line, "(https://.*)"))
+                url = Regex.Match(line, "(https://.*)").Groups[1].Value;
+            return url;
+        }
+
+        private void OpenTopList()
+        {
+            var urls = GetTopUrlCounters();
+
+            if (urls.Count() > 50)
+            {
+                MessageBox.Show("To many links to open!");
+                return;
+            }
+
+            Process process = new Process();
+            process.StartInfo.FileName = @"chrome.exe";
+
+            for (int i = 0; i < urls.Count(); i++)
+            {
+                if (i == 0)
+                    process.StartInfo.Arguments = urls[0].Url + " --new-window";
+                else
+                    process.StartInfo.Arguments = urls[i].Url;
+                process.Start();
+
+                if (i == 0)
+                {
+                    Thread.Sleep(2000);
+                    BringMainWindowToFront(process.Handle);
+                }
+            }
+        }
+
+        #endregion
+
+        #region BrowserDocumentCompletedEvents
+
         private void SearchPageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
@@ -122,15 +457,6 @@ namespace OlxParser
             }
 
             BuildAndSaveLinks();
-        }
-
-        private void ClearCookies()
-        {
-            nsICookieManager cookieMan;
-            cookieMan = Xpcom.GetService<nsICookieManager>("@mozilla.org/cookiemanager;1");
-            cookieMan = Xpcom.QueryInterface<nsICookieManager>(cookieMan);
-            cookieMan.RemoveAll();
-            AddListItem("Cookie cleared!");
         }
 
         private void LinkLoaded(object sender, GeckoDocumentCompletedEventArgs e)
@@ -223,321 +549,6 @@ namespace OlxParser
             LoadNextOrder();
         }
 
-        private void BuildAndSaveLinks()
-        {
-            var links = new List<string>();
-            for (var i = 1; i <= LastPage; i++)
-                links.Add($"{Url}/?page={i}");
-
-            var settings = SettingsManager.GetSettings();
-            settings.LastPage = LastPage;
-            settings.Links = links;
-
-            SettingsManager.SaveSettings(settings);
-            AddListItem("Links saved");
-            AddListItem("Ready search step!");
-        }
-
-        private void LoadNextPage()
-        {
-            if (!tmrRestarter.Enabled)
-                return;
-
-            Thread.Sleep(100);
-            var settings = SettingsManager.GetSettings();
-            var links = settings.GetNotHandledLinks();
-            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.HandledLinks.Count, settings.Links.Count);
-            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
-
-            if (links.Any())
-            {
-                RequestedLinkUrl = links[0];
-                AddListItem($"Navigate to {links[0]}");
-                _browserLinkParser.Navigate(links[0]);
-            }
-            else
-                AddListItem("No links to parse!");
-        }
-
-        private void LoadNextOrder()
-        {
-            if (!tmrRestarter.Enabled)
-                return;
-
-            Thread.Sleep(100);
-
-            var settings = SettingsManager.GetSettings();
-            var links = settings.GetNotHandledOrderLinks();
-            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
-            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.HandledLinks.Count, settings.Links.Count);
-
-            if (links.Any())
-            {
-                RequestedOrderUrl = links[0];
-                AddListItem($"Navigate to {links[0]}");
-                _browserOrderLoader.Navigate(links[0]);
-            }
-            else
-                AddListItem("No orders to parse!");
-        }
-
-        private void DrawMostPopularView()
-        {
-            var urls = GetTopUrlCounters();
-
-            lstBoxTop.Items.Clear();
-            foreach (var item in urls)
-                lstBoxTop.Items.Add($"Views: {item.Count}, Url: {item.Url}");
-        }
-
-        private List<UrlCounter> GetTopUrlCounters()
-        {
-            var settigns = SettingsManager.GetSettings();
-
-            var urls = settigns.UrlWithCounts;
-            if (!chkDescending.Checked)
-                urls = settigns.UrlWithCounts.OrderBy(u => u.Count).ToList();
-            return urls.Take((int)nmrTop.Value).ToList();
-        }
-
-        private void SearchOlx()
-        {
-            if (string.IsNullOrEmpty(txtSearch.Text))
-                AddListItem("Please enter search text!");
-            else
-            {
-                var settings = SettingsManager.GetSettings();
-
-                if (settings.Links.Any())
-                {
-                    txtSearch.Text = txtSearch.Text.Replace(" ", "-");
-                    var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
-                    Url = uri.AbsoluteUri;
-                    Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
-
-                    settings.SearchText = txtSearch.Text;
-                    settings.LastSavedDate = DateTime.Now;
-                    SettingsManager.SaveSettings(settings);
-                    _browserSearchLinks.Navigate(uri.AbsoluteUri);
-                }
-            }
-        }
-
-        private void tmrRestarter_Tick(object sender, System.EventArgs e)
-        {
-            var secondsToRestart = 20;
-            var settings = SettingsManager.GetSettings();
-            lblStatus.Text = GVars.ProgramStatuses.InProgress;
-
-            if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
-
-            AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
-            ClearCookies();
-
-            UnsubscribeBrowsers();
-            SubscribeBrowsers();
-
-            SearchOlx();
-            LoadNextPage();
-            LoadNextOrder();
-        }
-
-        private void btnClearStatuses_Click(object sender, EventArgs e)
-        {
-            lstBoxStatus.Items.Clear();
-        }
-
-        private void nmrTop_ValueChanged(object sender, EventArgs e)
-        {
-            DrawMostPopularView();
-        }
-
-        private string GetUrlFromLine(string line)
-        {
-            var url = string.Empty;
-            if (Regex.IsMatch(line, "(https://.*)"))
-                url = Regex.Match(line, "(https://.*)").Groups[1].Value;
-            return url;
-        }
-
-        private void btnDrawPopular_Click(object sender, EventArgs e)
-        {
-            DrawMostPopularView();
-        }
-
-        private void lstBoxTop_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (lstBoxTop.SelectedIndex == -1)
-                return;
-
-            var value = GetUrlFromLine(lstBoxTop.SelectedItem.ToString());
-            if (!string.IsNullOrEmpty(value))
-            {
-                Process.Start("chrome.exe", value);
-                Clipboard.SetText(value);
-            }
-        }
-
-        private void lstBoxStatus_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (lstBoxStatus.SelectedIndex == -1)
-                return;
-
-            var value = GetUrlFromLine(lstBoxStatus.SelectedItem.ToString());
-            if (!string.IsNullOrEmpty(value))
-            {
-                Process.Start("chrome.exe", value);
-                Clipboard.SetText(value);
-            }
-        }
-
-        public void BringMainWindowToFront(IntPtr mainWindowHandle)
-        {
-            SetForegroundWindow(mainWindowHandle);
-        }
-
-        private void OpenTopList()
-        {
-            var urls = GetTopUrlCounters();
-
-            if (urls.Count() > 50)
-            {
-                MessageBox.Show("To many links to open!");
-                return;
-            }
-
-            Process process = new Process();
-            process.StartInfo.FileName = @"chrome.exe";
-
-            for (int i = 0; i < urls.Count(); i++)
-            {
-                if(i == 0)
-                    process.StartInfo.Arguments = urls[0].Url + " --new-window";
-                else
-                    process.StartInfo.Arguments = urls[i].Url;
-                process.Start();
-
-                if (i == 0)
-                {
-                    Thread.Sleep(2000);
-                    BringMainWindowToFront(process.Handle);
-                }
-            }
-        }
-
-        private void btnStart_Click(object sender, EventArgs e)
-        {
-            StartApp();
-        }
-
-        private void btnStop_Click(object sender, EventArgs e)
-        {
-            StopApp();
-        }
-
-        private void StartApp()
-        {
-            tmrRestarter.Start();
-            SetLabelsText();
-            SubscribeBrowsers();
-        }
-
-        private void SetLabelsText()
-        {
-            var settings = SettingsManager.GetSettings();
-
-            lblStatus.Text = tmrRestarter.Enabled ? GVars.ProgramStatuses.InProgress : GVars.ProgramStatuses.Stoped;
-            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
-            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.Links.Count - settings.HandledLinks.Count, settings.Links.Count);
-            txtSearch.Text = settings.SearchText;
-        }
-
-        private void StopApp()
-        {
-            tmrRestarter.Stop();
-            lblOrdersLoaded.Text = string.Empty;
-            lblToParse.Text = string.Empty;
-            lblStatus.Text = GVars.ProgramStatuses.Stoped;
-            UnsubscribeBrowsers();
-        }
-
-        private void UnsubscribeBrowsers()
-        {
-            _browserSearchLinks.DocumentCompleted -= SearchPageLoaded;
-            _browserLinkParser.DocumentCompleted -= LinkLoaded;
-            _browserOrderLoader.DocumentCompleted -= OrderLoaded;
-        }
-
-        private void SubscribeBrowsers()
-        {
-            _browserSearchLinks.DocumentCompleted += SearchPageLoaded;
-            _browserLinkParser.DocumentCompleted += LinkLoaded;
-            _browserOrderLoader.DocumentCompleted += OrderLoaded;
-        }
-
-        private void chkDescending_CheckedChanged(object sender, EventArgs e)
-        {
-            DrawMostPopularView();
-        }
-
-        private void btnClearSettings_Click(object sender, EventArgs e)
-        {
-            SettingsManager.ClearSettings();
-        }
-
-        private void ddSettings_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            SettingsManager.ActiveSettingsName = $"{ddSettings.Items[ddSettings.SelectedIndex]}";
-            var settings = SettingsManager.GetSettings();
-            btnClearStatuses.PerformClick();
-            SetLabelsText();
-        }
-
-        private void btnSaveSettings_Click(object sender, EventArgs e)
-        {
-            var fileNames = GetExistedSettigns();
-
-            var settingToSave = txtSettingsName.Text;
-
-            if (string.IsNullOrEmpty(settingToSave))
-            {
-                MessageBox.Show("Please enter the name of the setting!");
-                return;
-            }
-
-            if (fileNames.Contains(settingToSave))
-                MessageBox.Show("Setting with such name exists! please enter another name!");
-            else
-            {
-                StopApp();
-                SettingsManager.ActiveSettingsName = settingToSave;
-                var settings = SettingsManager.GetSettings();
-                settings.SearchText = txtSearch.Text;
-                SettingsManager.SaveSettings(settings);
-
-                lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(0, 0);
-                lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, 0);
-                SetDDSettings(settingToSave);
-            }
-        }
-
-        private void ddSettings_DropDown(object sender, EventArgs e)
-        {
-            StopApp();
-        }
-
-        private void nmrStep_ValueChanged(object sender, EventArgs e)
-        {
-            var numeric = (NumericUpDown)sender;
-            var selectedVaue = (int)numeric.Value;
-            var settings = SettingsManager.GetSettings();
-            SettingsManager.SaveSettings(settings);
-            SetLabelsText();
-        }
-
-        private void btnOpenTop_Click(object sender, EventArgs e)
-        {
-            OpenTopList();
-        }
+        #endregion
     }
 }
