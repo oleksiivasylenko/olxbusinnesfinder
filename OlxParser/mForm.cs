@@ -129,13 +129,23 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
+            settings.LastSavedDate = DateTime.Now;
+            SettingsManager.SaveSettings(settings);
+
             AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
             ClearCookies();
+            ClearRequestedUrls();
 
             UnsubscribeBrowsers();
             SubscribeBrowsers();
 
             FetchAllDate();
+        }
+
+        private void ClearRequestedUrls()
+        {
+            RequestedOrderUrl = null;
+            RequestedLinkUrl = null;
         }
 
         private void FetchAllDate()
@@ -217,7 +227,7 @@ namespace OlxParser
 
         private void btnSaveSettings_Click(object sender, EventArgs e)
         {
-            var fileNames = GetExistedSettigns();
+            var fileNames = GetExistedSettings();
 
             var settingToSave = txtSettingsName.Text;
 
@@ -319,7 +329,7 @@ namespace OlxParser
             _browserOrderLoader.DocumentCompleted += OrderLoaded;
         }
 
-        private List<string> GetExistedSettigns()
+        private List<string> GetExistedSettings()
         {
             var fileNames = Directory.GetFiles(SettingsManager.GetAppDataFolder(), "*.json")
                                     .Select(Path.GetFileName)
@@ -330,7 +340,7 @@ namespace OlxParser
         private void SetDDSettings(string settingName = null)
         {
             ddSettings.Items.Clear();
-            var fileNames = GetExistedSettigns();
+            var fileNames = GetExistedSettings();
 
             foreach (var filename in fileNames)
                 ddSettings.Items.Add(filename.Replace(".json", ""));
@@ -453,7 +463,7 @@ namespace OlxParser
 
         private void SearchPageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
-            var settigns = SettingsManager.GetSettings();
+            var settings = SettingsManager.GetSettings();
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
             var lastPage = 0;
@@ -472,8 +482,9 @@ namespace OlxParser
                         lastPage = match;
                 }
             }
-            settigns.LastPage = lastPage;
-            SettingsManager.SaveSettings(settigns);
+            settings.LastPage = lastPage;
+            settings.LastSavedDate = DateTime.Now;
+            SettingsManager.SaveSettings(settings);
             BuildAndSaveLinks();
         }
 
@@ -483,10 +494,10 @@ namespace OlxParser
             var url = e.Uri.AbsoluteUri;
             txtUrl.Text = url;
 
-            AddListItem($"Link loaded - {url}");
-
             if (!url.Contains("/q-"))
                 return;
+
+            AddListItem($"Link loaded - {url}");
 
             if (settings.HandledLinks.Contains(url))
             {
@@ -523,6 +534,7 @@ namespace OlxParser
             if (!url.Contains("?page="))
                 url = $"{url}?page=1";
 
+            settings.LastSavedDate = DateTime.Now;
             settings.HandledLinks.Add(url != RequestedLinkUrl ? RequestedLinkUrl : url);
             SettingsManager.SaveSettings(settings);
             RequestedLinkUrl = null;
