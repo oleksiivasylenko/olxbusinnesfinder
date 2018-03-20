@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this._browser = new Gecko.GeckoWebBrowser();
+            this._browserSearchLinks = new Gecko.GeckoWebBrowser();
             this.tmrRestarter = new System.Windows.Forms.Timer(this.components);
             this.tmrPageLoaded = new System.Windows.Forms.Timer(this.components);
             this.txtSearch = new System.Windows.Forms.TextBox();
@@ -60,14 +60,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.nmrStep)).BeginInit();
             this.SuspendLayout();
             // 
-            // _browser
+            // _browserSearchLinks
             // 
-            this._browser.FrameEventsPropagateToMainWindow = false;
-            this._browser.Location = new System.Drawing.Point(12, 771);
-            this._browser.Name = "_browser";
-            this._browser.Size = new System.Drawing.Size(398, 122);
-            this._browser.TabIndex = 0;
-            this._browser.UseHttpActivityObserver = false;
+            this._browserSearchLinks.FrameEventsPropagateToMainWindow = false;
+            this._browserSearchLinks.Location = new System.Drawing.Point(12, 771);
+            this._browserSearchLinks.Name = "_browserSearchLinks";
+            this._browserSearchLinks.Size = new System.Drawing.Size(398, 122);
+            this._browserSearchLinks.TabIndex = 0;
+            this._browserSearchLinks.UseHttpActivityObserver = false;
             // 
             // tmrRestarter
             // 
@@ -345,7 +345,7 @@
             this.Controls.Add(this.txtUrl);
             this.Controls.Add(this.lblToParse);
             this.Controls.Add(this.txtSearch);
-            this.Controls.Add(this._browser);
+            this.Controls.Add(this._browserSearchLinks);
             this.Name = "mForm";
             this.Text = "OlxParser";
             ((System.ComponentModel.ISupportInitialize)(this.nmrTop)).EndInit();
@@ -357,7 +357,7 @@
 
         #endregion
 
-        private Gecko.GeckoWebBrowser _browser;
+        private Gecko.GeckoWebBrowser _browserSearchLinks;
         private System.Windows.Forms.Timer tmrRestarter;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Label lblToParse;

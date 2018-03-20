@@ -35,12 +35,19 @@ namespace OlxParser
         private int LastPage { get; set; }
         private string RequestedLinkUrl { get; set; }
         private string RequestedOrderUrl { get; set; }
+        private GeckoWebBrowser _browserLinkParser { get; set; }
+        private GeckoWebBrowser _browserOrderLoader { get; set; }
+
 
         public mForm()
         {
             InitializeComponent();
             Xpcom.Initialize("Firefox");
-            _browser.DocumentCompleted += PageLoaded;
+            _browserLinkParser = new GeckoWebBrowser();
+            _browserOrderLoader = new GeckoWebBrowser();
+
+
+            SubscribeBrowsers();
             SetDDSettings();
 
             var settings = SettingsManager.GetSettings();
@@ -95,7 +102,7 @@ namespace OlxParser
             lstBoxStatus.TopIndex = lstBoxStatus.Items.Count - nItems;
         }
 
-        private void PageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
+        private void SearchPageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -116,7 +123,6 @@ namespace OlxParser
             }
 
             BuildAndSaveLinks();
-            _browser.DocumentCompleted -= PageLoaded;
         }
 
         private void ClearCookies()
@@ -242,14 +248,14 @@ namespace OlxParser
             Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledLinks();
-            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(links.Count, settings.Links.Count);
-            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(0, settings.OrderLinks.Count);
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.HandledLinks.Count, settings.Links.Count);
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
 
             if (links.Any())
             {
                 RequestedLinkUrl = links[0];
                 AddListItem($"Navigate to {links[0]}");
-                _browser.Navigate(links[0]);
+                _browserLinkParser.Navigate(links[0]);
             }
             else
             {
@@ -259,46 +265,26 @@ namespace OlxParser
             }
         }
 
-        private void GetLinks()
-        {
-            ClearDocumentCompletedEvents();
-            _browser.DocumentCompleted += LinkLoaded;
-            LoadNextPage();
-        }
-
-        private void GetViewsCount()
-        {
-            ClearDocumentCompletedEvents();
-            _browser.DocumentCompleted += OrderLoaded;
-            LoadNextOrder();
-        }
-
-        private void ClearDocumentCompletedEvents()
-        {
-            _browser.DocumentCompleted -= LinkLoaded;
-            _browser.DocumentCompleted -= PageLoaded;
-            _browser.DocumentCompleted -= OrderLoaded;
-        }
-
         private void LoadNextOrder()
         {
             if (!tmrRestarter.Enabled)
                 return;
 
             Thread.Sleep(100);
+
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledOrderLinks();
-            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(links.Count, settings.OrderLinks.Count);
-            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.Links.Count - settings.HandledLinks.Count, settings.Links.Count);
+            lblOrdersLoaded.Text = GVars.LabelsText.LabelOrdersLoaded(settings.HandledOrderLinks.Count, settings.OrderLinks.Count);
+            lblToParse.Text = GVars.LabelsText.LabelLinksLoaded(settings.HandledLinks.Count, settings.Links.Count);
 
             if (links.Any())
             {
                 RequestedOrderUrl = links[0];
                 AddListItem($"Navigate to {links[0]}");
-                _browser.Navigate(links[0]);
+                _browserOrderLoader.Navigate(links[0]);
             }
             else
-                AddListItem("OrderParsingReady");
+                AddListItem("No orders to parse!");
         }
 
         private void DrawMostPopularView()
@@ -307,7 +293,7 @@ namespace OlxParser
 
             lstBoxTop.Items.Clear();
             foreach (var item in urls)
-                lstBoxTop.Items.Add($"Viewvs: {item.Count}, Url: {item.Url}");
+                lstBoxTop.Items.Add($"Views: {item.Count}, Url: {item.Url}");
         }
 
         private List<UrlCounter> GetTopUrlCounters()
@@ -323,12 +309,9 @@ namespace OlxParser
         private void SearchOlx()
         {
             if (string.IsNullOrEmpty(txtSearch.Text))
-                AddListItem("Please exter search text!");
+                AddListItem("Please enter search text!");
             else
             {
-                ClearDocumentCompletedEvents();
-                _browser.DocumentCompleted += PageLoaded;
-
                 txtSearch.Text = txtSearch.Text.Replace(" ", "-");
                 var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
                 Url = uri.AbsoluteUri;
@@ -338,7 +321,7 @@ namespace OlxParser
                 settings.SearchText = txtSearch.Text;
                 settings.LastSavedDate = DateTime.Now;
                 SettingsManager.SaveSettings(settings);
-                _browser.Navigate(uri.AbsoluteUri);
+                _browserSearchLinks.Navigate(uri.AbsoluteUri);
             }
         }
 
@@ -351,28 +334,23 @@ namespace OlxParser
             if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
             nmrStep.Value = (int)settings.CurrentStep;
-            AddListItem($"{secondsToRestart} seconds ellapsed! restart!");
+            AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
             ClearCookies();
+
+            UnsubscribeBrowsers();
+            SubscribeBrowsers();
 
             switch (settings.CurrentStep)
             {
-                case ProgressStep.Three_FetchOrdersData:
-                    AddListItem("restarting orders");
-                    SettingsManager.SaveSettings(settings);
-                    ClearDocumentCompletedEvents();
-                    GetViewsCount();
+                case ProgressStep.One_SearchRequest:
+                    AddListItem("Search process");
+                    SearchOlx();
                     break;
                 case ProgressStep.Two_FetchOrderLinks:
-                    AddListItem("restarting parse link");
-                    SettingsManager.SaveSettings(settings);
-                    ClearDocumentCompletedEvents();
-                    GetLinks();
-                    break;
-                default:
-                    AddListItem("restarting search");
-                    SettingsManager.SaveSettings(settings);
-                    ClearDocumentCompletedEvents();
-                    SearchOlx();
+                case ProgressStep.Three_FetchOrdersData:
+                    AddListItem("Sarse link process & orders process");
+                    LoadNextPage();
+                    LoadNextOrder();
                     break;
             }
         }
@@ -437,7 +415,7 @@ namespace OlxParser
 
             if (urls.Count() > 50)
             {
-                MessageBox.Show("ToManyLinksToOpen!");
+                MessageBox.Show("To many links to open!");
                 return;
             }
 
@@ -474,6 +452,7 @@ namespace OlxParser
         {
             tmrRestarter.Start();
             SetLabelsText();
+            SubscribeBrowsers();
         }
 
         private void SetLabelsText()
@@ -492,22 +471,21 @@ namespace OlxParser
             lblOrdersLoaded.Text = string.Empty;
             lblToParse.Text = string.Empty;
             lblStatus.Text = GVars.ProgramStatuses.Stoped;
-
             UnsubscribeBrowsers();
+        }
+
+        private void UnsubscribeBrowsers()
+        {
+            _browserSearchLinks.DocumentCompleted -= SearchPageLoaded;
+            _browserLinkParser.DocumentCompleted -= LinkLoaded;
+            _browserOrderLoader.DocumentCompleted -= OrderLoaded;
         }
 
         private void SubscribeBrowsers()
         {
-            _browser.DocumentCompleted -= LinkLoaded;
-            _browser.DocumentCompleted -= PageLoaded;
-            _browser.DocumentCompleted -= OrderLoaded;
-        }
-
-        public void UnsubscribeBrowsers()
-        {
-            _browser.DocumentCompleted -= LinkLoaded;
-            _browser.DocumentCompleted -= PageLoaded;
-            _browser.DocumentCompleted -= OrderLoaded;
+            _browserSearchLinks.DocumentCompleted += SearchPageLoaded;
+            _browserLinkParser.DocumentCompleted += LinkLoaded;
+            _browserOrderLoader.DocumentCompleted += OrderLoaded;
         }
 
         private void chkDescending_CheckedChanged(object sender, EventArgs e)
@@ -537,7 +515,7 @@ namespace OlxParser
 
             if (string.IsNullOrEmpty(settingToSave))
             {
-                MessageBox.Show("PleaseEnterNameOfTheSetting!");
+                MessageBox.Show("Please enter the name of the setting!");
                 return;
             }
 
@@ -564,7 +542,6 @@ namespace OlxParser
 
         private void nmrStep_ValueChanged(object sender, EventArgs e)
         {
-            UnsubscribeBrowsers();
             var numeric = (NumericUpDown)sender;
             var selectedVaue = (int)numeric.Value;
             var settings = SettingsManager.GetSettings();
