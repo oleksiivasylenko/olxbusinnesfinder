@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace OlxParser
@@ -24,6 +23,9 @@ namespace OlxParser
         private string RequestedOrderUrl { get; set; }
         private GeckoWebBrowser _browserLinkParser { get; set; }
         private GeckoWebBrowser _browserOrderLoader { get; set; }
+        private DateTime LastLinkLoaded { get; set; }
+        private DateTime LastOrderLoaded { get; set; }
+
 
         #endregion
 
@@ -55,7 +57,6 @@ namespace OlxParser
             if (!tmrRestarter.Enabled)
                 return;
 
-            Thread.Sleep(100);
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledLinks();
             PopulateLabels();
@@ -77,8 +78,6 @@ namespace OlxParser
         {
             if (!tmrRestarter.Enabled)
                 return;
-
-            Thread.Sleep(100);
 
             var settings = SettingsManager.GetSettings();
             var links = settings.GetNotHandledOrderLinks();
@@ -112,7 +111,6 @@ namespace OlxParser
                     Query = Regex.Match(url, @"q-(.*)").Groups[1].Value;
 
                     settings.SearchText = txtSearch.Text;
-                    settings.LastSavedDate = DateTime.Now;
                     SettingsManager.SaveSettings(settings);
                     _browserSearchLinks.Navigate(url);
                 }
@@ -126,20 +124,22 @@ namespace OlxParser
         private void tmrRestarter_Tick(object sender, System.EventArgs e)
         {
             var secondsToRestart = 20;
-            var settings = SettingsManager.GetSettings();
-            if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
-            settings.LastSavedDate = DateTime.Now;
-            SettingsManager.SaveSettings(settings);
+            var secondsAgo = DateTime.Now.AddSeconds(-secondsToRestart);
+            if (secondsAgo > LastLinkLoaded || secondsAgo > LastOrderLoaded)
+            {
+                LastLinkLoaded = DateTime.Now;
+                LastOrderLoaded = DateTime.Now;
 
-            AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
-            ClearCookies();
-            ClearRequestedUrls();
+                AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
+                ClearCookies();
+                ClearRequestedUrls();
 
-            UnsubscribeBrowsers();
-            SubscribeBrowsers();
+                UnsubscribeBrowsers();
+                SubscribeBrowsers();
 
-            FetchAllDate();
+                FetchAllDate();
+            }
         }
 
         private void ClearRequestedUrls()
@@ -450,10 +450,7 @@ namespace OlxParser
                 process.Start();
 
                 if (i == 0)
-                {
-                    Thread.Sleep(2000);
                     BringMainWindowToFront(process.Handle);
-                }
             }
         }
 
@@ -483,7 +480,6 @@ namespace OlxParser
                 }
             }
             settings.LastPage = lastPage;
-            settings.LastSavedDate = DateTime.Now;
             SettingsManager.SaveSettings(settings);
             BuildAndSaveLinks();
         }
@@ -534,10 +530,10 @@ namespace OlxParser
             if (!url.Contains("?page="))
                 url = $"{url}?page=1";
 
-            settings.LastSavedDate = DateTime.Now;
             settings.HandledLinks.Add(url != RequestedLinkUrl ? RequestedLinkUrl : url);
             SettingsManager.SaveSettings(settings);
             RequestedLinkUrl = null;
+            LastLinkLoaded = DateTime.Now;
             FetchAllDate();
         }
 
@@ -549,7 +545,15 @@ namespace OlxParser
             if (url.Contains("googleads") || url.Contains("about:blank"))
                 return;
 
+
             AddListItem($"Order loaded - {url}");
+            if (url.Contains("#from404"))
+            {
+                url = url.Replace("#from404", "");
+                settings.HandledOrderLinks.Add(url);
+                settings.HandledOrderLinks.Add(RequestedOrderUrl);
+                SettingsManager.SaveSettings(settings);
+            }
 
             if (settings.HandledOrderLinks.Contains(url))
             {
@@ -560,6 +564,7 @@ namespace OlxParser
                 FetchAllDate();
                 return;
             }
+            
             settings.HandledOrderLinks.Add(url != RequestedOrderUrl ? RequestedOrderUrl : url);
 
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
@@ -574,6 +579,7 @@ namespace OlxParser
 
             SettingsManager.SaveSettings(settings);
             RequestedOrderUrl = null;
+            LastOrderLoaded = DateTime.Now;
             FetchAllDate();
         }
 

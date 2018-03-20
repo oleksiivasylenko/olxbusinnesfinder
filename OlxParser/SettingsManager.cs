@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Threading;
 
 namespace OlxParser
 {
@@ -11,7 +12,7 @@ namespace OlxParser
         public static Settings GetSettings()
         {
             if (!File.Exists(_filePath))
-                File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now } ));
+                File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings()));
 
             var fileData = File.ReadAllText(_filePath);
             var settings = JsonConvert.DeserializeObject<Settings>(fileData);
@@ -30,13 +31,13 @@ namespace OlxParser
 
         public static void SaveSettings(Settings settings)
         {
-            settings.LastSavedDate = DateTime.Now;
             File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(settings));
+            Thread.Sleep(100);
         }
 
         public static void ClearSettings()
         {
-            File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings() { LastSavedDate = DateTime.Now }));
+            File.WriteAllText($"{GetAppDataFolder()}/{ActiveSettingsName}.json", JsonConvert.SerializeObject(new Settings()));
         }
     }
 }

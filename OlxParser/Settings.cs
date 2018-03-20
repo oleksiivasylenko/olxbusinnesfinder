@@ -11,7 +11,6 @@ namespace OlxParser
         public List<string> HandledLinks { get; set; }
         public List<string> OrderLinks { get; set; }
         public List<string> HandledOrderLinks { get; set; }
-        public DateTime LastSavedDate { get; set; }
         public List<UrlCounter> UrlWithCounts { get; set; }
         public string SearchText { get; set; }
 

@@ -31,7 +31,6 @@
             this.components = new System.ComponentModel.Container();
             this._browserSearchLinks = new Gecko.GeckoWebBrowser();
             this.tmrRestarter = new System.Windows.Forms.Timer(this.components);
-            this.tmrPageLoaded = new System.Windows.Forms.Timer(this.components);
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.lblToParse = new System.Windows.Forms.Label();
             this.txtUrl = new System.Windows.Forms.TextBox();
@@ -72,13 +71,8 @@
             // tmrRestarter
             // 
             this.tmrRestarter.Enabled = true;
-            this.tmrRestarter.Interval = 3000;
+            this.tmrRestarter.Interval = 5000;
             this.tmrRestarter.Tick += new System.EventHandler(this.tmrRestarter_Tick);
-            // 
-            // tmrPageLoaded
-            // 
-            this.tmrPageLoaded.Enabled = true;
-            this.tmrPageLoaded.Interval = 10000;
             // 
             // txtSearch
             // 
@@ -361,7 +355,6 @@
         private System.Windows.Forms.Timer tmrRestarter;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Label lblToParse;
-        private System.Windows.Forms.Timer tmrPageLoaded;
         private System.Windows.Forms.TextBox txtUrl;
         private System.Windows.Forms.ListBox lstBoxStatus;
         private System.Windows.Forms.Label lblUrl;
