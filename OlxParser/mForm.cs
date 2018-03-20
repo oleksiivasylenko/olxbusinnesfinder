@@ -488,12 +488,12 @@ namespace OlxParser
         {
             var settings = SettingsManager.GetSettings();
             var url = e.Uri.AbsoluteUri;
-            txtUrl.Text = url;
 
             if (!url.Contains("/q-"))
                 return;
 
             AddListItem($"Link loaded - {url}");
+            txtUrl.Text = url;
 
             if (settings.HandledLinks.Contains(url))
             {
@@ -545,8 +545,9 @@ namespace OlxParser
             if (url.Contains("googleads") || url.Contains("about:blank"))
                 return;
 
-
             AddListItem($"Order loaded - {url}");
+            txtUrl.Text = url;
+
             if (url.Contains("#from404"))
             {
                 url = url.Replace("#from404", "");
