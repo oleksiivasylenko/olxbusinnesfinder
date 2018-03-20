@@ -7,17 +7,11 @@ namespace OlxParser
     public class Settings
     {
         public int LastPage { get; set; }
-
         public List<string> Links { get; set; }
-
         public List<string> HandledLinks { get; set; }
-
         public List<string> OrderLinks { get; set; }
         public List<string> HandledOrderLinks { get; set; }
         public DateTime LastSavedDate { get; set; }
-
-        public ProgressStep CurrentStep { get; set; }
-
         public List<UrlCounter> UrlWithCounts { get; set; }
         public string SearchText { get; set; }
 
@@ -49,5 +43,4 @@ namespace OlxParser
 
         public string Url { get; set; }
     }
-
 }

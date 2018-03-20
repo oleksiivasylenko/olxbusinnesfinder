@@ -51,7 +51,6 @@ namespace OlxParser
             SetDDSettings();
 
             var settings = SettingsManager.GetSettings();
-            nmrStep.Value = (int)settings.CurrentStep;
             txtSearch.Text = settings.SearchText;
 
             StopApp();
@@ -233,7 +232,6 @@ namespace OlxParser
             var settings = SettingsManager.GetSettings();
             settings.LastPage = LastPage;
             settings.Links = links;
-            settings.CurrentStep = ProgressStep.Two_FetchOrderLinks;
 
             SettingsManager.SaveSettings(settings);
             AddListItem("Links saved");
@@ -258,11 +256,7 @@ namespace OlxParser
                 _browserLinkParser.Navigate(links[0]);
             }
             else
-            {
-                AddListItem("FetchLinksReady");
-                settings.CurrentStep = ProgressStep.Three_FetchOrdersData;
-                SettingsManager.SaveSettings(settings);
-            }
+                AddListItem("No links to parse!");
         }
 
         private void LoadNextOrder()
@@ -312,16 +306,20 @@ namespace OlxParser
                 AddListItem("Please enter search text!");
             else
             {
-                txtSearch.Text = txtSearch.Text.Replace(" ", "-");
-                var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
-                Url = uri.AbsoluteUri;
-                Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
-
                 var settings = SettingsManager.GetSettings();
-                settings.SearchText = txtSearch.Text;
-                settings.LastSavedDate = DateTime.Now;
-                SettingsManager.SaveSettings(settings);
-                _browserSearchLinks.Navigate(uri.AbsoluteUri);
+
+                if (settings.Links.Any())
+                {
+                    txtSearch.Text = txtSearch.Text.Replace(" ", "-");
+                    var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
+                    Url = uri.AbsoluteUri;
+                    Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
+
+                    settings.SearchText = txtSearch.Text;
+                    settings.LastSavedDate = DateTime.Now;
+                    SettingsManager.SaveSettings(settings);
+                    _browserSearchLinks.Navigate(uri.AbsoluteUri);
+                }
             }
         }
 
@@ -333,26 +331,15 @@ namespace OlxParser
 
             if (settings.LastSavedDate >= DateTime.Now.AddSeconds(-secondsToRestart)) return;
 
-            nmrStep.Value = (int)settings.CurrentStep;
             AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
             ClearCookies();
 
             UnsubscribeBrowsers();
             SubscribeBrowsers();
 
-            switch (settings.CurrentStep)
-            {
-                case ProgressStep.One_SearchRequest:
-                    AddListItem("Search process");
-                    SearchOlx();
-                    break;
-                case ProgressStep.Two_FetchOrderLinks:
-                case ProgressStep.Three_FetchOrdersData:
-                    AddListItem("Sarse link process & orders process");
-                    LoadNextPage();
-                    LoadNextOrder();
-                    break;
-            }
+            SearchOlx();
+            LoadNextPage();
+            LoadNextOrder();
         }
 
         private void btnClearStatuses_Click(object sender, EventArgs e)
@@ -502,7 +489,6 @@ namespace OlxParser
         {
             SettingsManager.ActiveSettingsName = $"{ddSettings.Items[ddSettings.SelectedIndex]}";
             var settings = SettingsManager.GetSettings();
-            nmrStep.Value = (int)settings.CurrentStep;
             btnClearStatuses.PerformClick();
             SetLabelsText();
         }
@@ -545,7 +531,6 @@ namespace OlxParser
             var numeric = (NumericUpDown)sender;
             var selectedVaue = (int)numeric.Value;
             var settings = SettingsManager.GetSettings();
-            settings.CurrentStep = (ProgressStep)selectedVaue;
             SettingsManager.SaveSettings(settings);
             SetLabelsText();
         }
