@@ -20,8 +20,6 @@ namespace OlxParser
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern int SetForegroundWindow(IntPtr hwnd);
         private string Query { get; set; }
-        private string Url { get; set; }
-        private int LastPage { get; set; }
         private string RequestedLinkUrl { get; set; }
         private string RequestedOrderUrl { get; set; }
         private GeckoWebBrowser _browserLinkParser { get; set; }
@@ -64,9 +62,12 @@ namespace OlxParser
 
             if (links.Any())
             {
-                RequestedLinkUrl = links[0];
-                AddListItem($"Navigate to {links[0]}");
-                _browserLinkParser.Navigate(links[0]);
+                if (string.IsNullOrEmpty(RequestedLinkUrl))
+                {
+                    RequestedLinkUrl = links[0];
+                    AddListItem($"Navigate to {links[0]}");
+                    _browserLinkParser.Navigate(links[0]);
+                }
             }
             else
                 AddListItem("No links to parse!");
@@ -85,9 +86,12 @@ namespace OlxParser
 
             if (links.Any())
             {
-                RequestedOrderUrl = links[0];
-                AddListItem($"Navigate to {links[0]}");
-                _browserOrderLoader.Navigate(links[0]);
+                if (string.IsNullOrEmpty(RequestedOrderUrl))
+                {
+                    RequestedOrderUrl = links[0];
+                    AddListItem($"Navigate to {links[0]}");
+                    _browserOrderLoader.Navigate(links[0]);
+                }
             }
             else
                 AddListItem("No orders to parse!");
@@ -101,17 +105,16 @@ namespace OlxParser
             {
                 var settings = SettingsManager.GetSettings();
 
-                if (settings.Links.Any())
+                if (!settings.Links.Any())
                 {
                     txtSearch.Text = txtSearch.Text.Replace(" ", "-");
-                    var uri = new Uri($"https://www.olx.ua/list/q-{txtSearch.Text}");
-                    Url = uri.AbsoluteUri;
-                    Query = Regex.Match(Url, @"q-(.*)").Groups[1].Value;
+                    var url = GetUrlBySearchText(txtSearch.Text);
+                    Query = Regex.Match(url, @"q-(.*)").Groups[1].Value;
 
                     settings.SearchText = txtSearch.Text;
                     settings.LastSavedDate = DateTime.Now;
                     SettingsManager.SaveSettings(settings);
-                    _browserSearchLinks.Navigate(uri.AbsoluteUri);
+                    _browserSearchLinks.Navigate(url);
                 }
             }
         }
@@ -132,6 +135,11 @@ namespace OlxParser
             UnsubscribeBrowsers();
             SubscribeBrowsers();
 
+            FetchAllDate();
+        }
+
+        private void FetchAllDate()
+        {
             SearchOlx();
             LoadNextPage();
             LoadNextOrder();
@@ -380,14 +388,21 @@ namespace OlxParser
             return urls.Take((int)nmrTop.Value).ToList();
         }
 
+        private string GetUrlBySearchText(string searchText)
+        {
+            var uri = new Uri($"https://www.olx.ua/list/q-{searchText}");
+            return uri.AbsoluteUri;
+        }
+
         private void BuildAndSaveLinks()
         {
-            var links = new List<string>();
-            for (var i = 1; i <= LastPage; i++)
-                links.Add($"{Url}/?page={i}");
-
             var settings = SettingsManager.GetSettings();
-            settings.LastPage = LastPage;
+            var url = GetUrlBySearchText(settings.SearchText);
+
+            var links = new List<string>();
+            for (var i = 1; i <= settings.LastPage; i++)
+                links.Add($"{url}/?page={i}");
+
             settings.Links = links;
 
             SettingsManager.SaveSettings(settings);
@@ -438,8 +453,10 @@ namespace OlxParser
 
         private void SearchPageLoaded(object sender, GeckoDocumentCompletedEventArgs e)
         {
+            var settigns = SettingsManager.GetSettings();
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
+            var lastPage = 0;
             htmlDoc.LoadHtml(pageData);
 
             var url = e.Uri.AbsoluteUri;
@@ -451,11 +468,12 @@ namespace OlxParser
                 if (hrefValue.Contains(Query) && hrefValue.Contains("?page="))
                 {
                     var match = Convert.ToInt32(Regex.Match(hrefValue, GVars.Regex.Page).Groups[1].Value);
-                    if (LastPage < match)
-                        LastPage = match;
+                    if (lastPage < match)
+                        lastPage = match;
                 }
             }
-
+            settigns.LastPage = lastPage;
+            SettingsManager.SaveSettings(settigns);
             BuildAndSaveLinks();
         }
 
@@ -475,12 +493,10 @@ namespace OlxParser
                 if (!settings.Links.Contains(url))
                     settings.Links.Add(url);
 
-                LoadNextPage();
+                RequestedLinkUrl = null;
+                FetchAllDate();
                 return;
             }
-
-            settings.HandledOrderLinks.Add(url != RequestedLinkUrl ? RequestedLinkUrl : url);
-            SettingsManager.SaveSettings(settings);
 
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -507,9 +523,10 @@ namespace OlxParser
             if (!url.Contains("?page="))
                 url = $"{url}?page=1";
 
-            settings.HandledLinks.Add(url);
+            settings.HandledLinks.Add(url != RequestedLinkUrl ? RequestedLinkUrl : url);
             SettingsManager.SaveSettings(settings);
-            LoadNextPage();
+            RequestedLinkUrl = null;
+            FetchAllDate();
         }
 
         private void OrderLoaded(object sender, GeckoDocumentCompletedEventArgs e)
@@ -527,11 +544,11 @@ namespace OlxParser
                 if (!settings.OrderLinks.Contains(url))
                     settings.OrderLinks.Add(url);
 
-                LoadNextOrder();
+                RequestedOrderUrl = null;
+                FetchAllDate();
                 return;
             }
             settings.HandledOrderLinks.Add(url != RequestedOrderUrl ? RequestedOrderUrl : url);
-            SettingsManager.SaveSettings(settings);
 
             var pageData = e.Window.Document.GetElementsByTagName("body")[0].InnerHtml;
             var htmlDoc = new HtmlAgilityPack.HtmlDocument();
@@ -543,10 +560,9 @@ namespace OlxParser
             settings.UrlWithCounts.Add(new UrlCounter() { Count = count, Url = url });
             settings.UrlWithCounts = settings.UrlWithCounts.OrderByDescending(uc => uc.Count).ToList();
 
-            settings.HandledOrderLinks.Add(url);
             SettingsManager.SaveSettings(settings);
-
-            LoadNextOrder();
+            RequestedOrderUrl = null;
+            FetchAllDate();
         }
 
         #endregion
