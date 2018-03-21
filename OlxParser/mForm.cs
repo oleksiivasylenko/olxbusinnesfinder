@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace OlxParser
@@ -21,11 +22,13 @@ namespace OlxParser
         private string Query { get; set; }
         private string RequestedLinkUrl { get; set; }
         private string RequestedOrderUrl { get; set; }
+        private GeckoWebBrowser _browserSearchLinks { get; set; }
         private GeckoWebBrowser _browserLinkParser { get; set; }
         private GeckoWebBrowser _browserOrderLoader { get; set; }
-        private DateTime LastLinkLoaded { get; set; }
-        private DateTime LastOrderLoaded { get; set; }
+        private DateTime? LastLinkLoaded { get; set; }
+        private DateTime? LastOrderLoaded { get; set; }
 
+        private const int SecondsToRestart = 40;
 
         #endregion
 
@@ -35,9 +38,8 @@ namespace OlxParser
         {
             InitializeComponent();
             Xpcom.Initialize("Firefox");
-            _browserLinkParser = new GeckoWebBrowser();
-            _browserOrderLoader = new GeckoWebBrowser();
 
+            CreateBrowsers();
             SubscribeBrowsers();
             SetDDSettings();
 
@@ -65,13 +67,21 @@ namespace OlxParser
             {
                 if (string.IsNullOrEmpty(RequestedLinkUrl))
                 {
-                    RequestedLinkUrl = links[0];
-                    AddListItem($"Navigate to {links[0]}");
-                    _browserLinkParser.Navigate(links[0]);
+                    var rand = new Random();
+                    var numb = rand.Next(links.Count);
+
+                    RequestedLinkUrl = links[numb];
+                    AddListItem($"Navigate to {links[numb]}");
+                    _browserLinkParser.Navigate(links[numb]);
                 }
             }
             else
+            {
+                if (LastLinkLoaded == null) return;
+
+                LastLinkLoaded = null;
                 AddListItem("No links to parse!");
+            }
         }
 
         private void LoadNextOrder()
@@ -87,13 +97,21 @@ namespace OlxParser
             {
                 if (string.IsNullOrEmpty(RequestedOrderUrl))
                 {
-                    RequestedOrderUrl = links[0];
-                    AddListItem($"Navigate to {links[0]}");
-                    _browserOrderLoader.Navigate(links[0]);
+                    var rand = new Random();
+                    var numb = rand.Next(links.Count);
+
+                    RequestedOrderUrl = links[numb];
+                    AddListItem($"Navigate to {links[numb]}");
+                    _browserOrderLoader.Navigate(links[numb]);
                 }
             }
             else
+            {
+                if (LastOrderLoaded == null) return;
+
+                LastOrderLoaded = null;
                 AddListItem("No orders to parse!");
+            }
         }
 
         private void SearchOlx()
@@ -106,6 +124,8 @@ namespace OlxParser
 
                 if (!settings.Links.Any())
                 {
+                    LastLinkLoaded = DateTime.Now;
+
                     txtSearch.Text = txtSearch.Text.Replace(" ", "-");
                     var url = GetUrlBySearchText(txtSearch.Text);
                     Query = Regex.Match(url, @"q-(.*)").Groups[1].Value;
@@ -121,25 +141,45 @@ namespace OlxParser
 
         #region UIEventHandlers
 
-        private void tmrRestarter_Tick(object sender, System.EventArgs e)
+        private void tmrRestarter_Tick(object sender, EventArgs e)
         {
-            var secondsToRestart = 20;
+            if (!IsLinksParsingStack() && !IsOrdersParsingStack()) return;
 
-            var secondsAgo = DateTime.Now.AddSeconds(-secondsToRestart);
-            if (secondsAgo > LastLinkLoaded || secondsAgo > LastOrderLoaded)
-            {
-                LastLinkLoaded = DateTime.Now;
-                LastOrderLoaded = DateTime.Now;
+            LastLinkLoaded = DateTime.Now;
+            LastOrderLoaded = DateTime.Now;
 
-                AddListItem($"{secondsToRestart} seconds ellapsed! Starting!");
-                ClearCookies();
-                ClearRequestedUrls();
+            AddListItem($"{SecondsToRestart} seconds ellapsed! Starting!");
+            ClearRequestedUrls();
+            CreateBrowsers();
+            SubscribeBrowsers();
+            ClearCookies();
+            Thread.Sleep(1000);
+            FetchAllDate();
+        }
 
-                UnsubscribeBrowsers();
-                SubscribeBrowsers();
+        private bool IsLinksParsingStack()
+        {
+            var secondsAgo = GetSecondsAgo(SecondsToRestart);
+            if (LastLinkLoaded == null)
+                return false;
+            if (secondsAgo > LastLinkLoaded)
+                return true;
+            return false;
+        }
 
-                FetchAllDate();
-            }
+        private bool IsOrdersParsingStack()
+        {
+            var secondsAgo = GetSecondsAgo(SecondsToRestart);
+            if (LastOrderLoaded == null)
+                return false;
+            if (secondsAgo > LastOrderLoaded)
+                return true;
+            return false;
+        }
+
+        private DateTime GetSecondsAgo(int seconds)
+        {
+            return DateTime.Now.AddSeconds(-seconds);
         }
 
         private void ClearRequestedUrls()
@@ -274,6 +314,13 @@ namespace OlxParser
 
         #region helper functions
 
+        private void CreateBrowsers()
+        {
+            _browserLinkParser = new GeckoWebBrowser();
+            _browserOrderLoader = new GeckoWebBrowser();
+            _browserSearchLinks = new GeckoWebBrowser();
+        }
+
         private void ClearCookies()
         {
             nsICookieManager cookieMan;
@@ -288,6 +335,7 @@ namespace OlxParser
             tmrRestarter.Start();
             PopulateLabels();
             SubscribeBrowsers();
+            FetchAllDate();
         }
 
         private void StopApp()
@@ -327,6 +375,13 @@ namespace OlxParser
             _browserSearchLinks.DocumentCompleted += SearchPageLoaded;
             _browserLinkParser.DocumentCompleted += LinkLoaded;
             _browserOrderLoader.DocumentCompleted += OrderLoaded;
+
+            _browserLinkParser.NavigationError += Browser_NavigationError;
+        }
+
+        private void Browser_NavigationError(object sender, GeckoNavigationErrorEventArgs e)
+        {
+            
         }
 
         private List<string> GetExistedSettings()

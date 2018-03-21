@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this._browserSearchLinks = new Gecko.GeckoWebBrowser();
             this.tmrRestarter = new System.Windows.Forms.Timer(this.components);
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.lblToParse = new System.Windows.Forms.Label();
@@ -61,12 +60,12 @@
             // 
             // _browserSearchLinks
             // 
-            this._browserSearchLinks.FrameEventsPropagateToMainWindow = false;
-            this._browserSearchLinks.Location = new System.Drawing.Point(12, 771);
-            this._browserSearchLinks.Name = "_browserSearchLinks";
-            this._browserSearchLinks.Size = new System.Drawing.Size(398, 122);
-            this._browserSearchLinks.TabIndex = 0;
-            this._browserSearchLinks.UseHttpActivityObserver = false;
+            //this._browserSearchLinks.FrameEventsPropagateToMainWindow = false;
+            //this._browserSearchLinks.Location = new System.Drawing.Point(12, 771);
+            //this._browserSearchLinks.Name = "_browserSearchLinks";
+            //this._browserSearchLinks.Size = new System.Drawing.Size(398, 122);
+            //this._browserSearchLinks.TabIndex = 0;
+            //this._browserSearchLinks.UseHttpActivityObserver = false;
             // 
             // tmrRestarter
             // 
@@ -351,7 +350,6 @@
 
         #endregion
 
-        private Gecko.GeckoWebBrowser _browserSearchLinks;
         private System.Windows.Forms.Timer tmrRestarter;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Label lblToParse;
